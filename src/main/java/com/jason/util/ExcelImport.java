@@ -2,6 +2,7 @@ package com.jason.util;
 
 import com.jason.anno.ExcelField;
 import org.apache.poi.hssf.usermodel.HSSFDateUtil;
+import org.apache.poi.hssf.usermodel.HSSFWorkbook;
 import org.apache.poi.ss.usermodel.Cell;
 import org.apache.poi.ss.usermodel.CellType;
 import org.apache.poi.ss.usermodel.Row;
@@ -31,6 +32,8 @@ public class ExcelImport<T> {
     private InputStream is;
     private Method[] methods;
     private XSSFWorkbook xssfWorkbook;
+    private HSSFWorkbook hssfWorkbook;
+    private byte[] bytes;
     private Sheet sheet;
     private boolean initialized;
     private boolean useTemplate;
@@ -116,12 +119,25 @@ public class ExcelImport<T> {
 
     private void init() throws IOException {
 
-        xssfWorkbook = new XSSFWorkbook(is);
-        //初始化
-        if(StringUtil.isNotBlank(sheetName)){
-            sheet = xssfWorkbook.getSheet(sheetName);
-        }else{
-            sheet = xssfWorkbook.getSheetAt(startSheet);
+        try {
+            bytes = new byte[is.available()];
+            is.read(bytes);
+            xssfWorkbook = new XSSFWorkbook(new ByteArrayInputStream(bytes));
+            //初始化
+            if(StringUtil.isNotBlank(sheetName)){
+                sheet = xssfWorkbook.getSheet(sheetName);
+            }else{
+                sheet = xssfWorkbook.getSheetAt(startSheet);
+            }
+        }catch (Exception e){
+            System.out.println("格式不匹配");
+            hssfWorkbook = new HSSFWorkbook(new ByteArrayInputStream(bytes));
+            //初始化
+            if(StringUtil.isNotBlank(sheetName)){
+                sheet = hssfWorkbook.getSheet(sheetName);
+            }else{
+                sheet = hssfWorkbook.getSheetAt(startSheet);
+            }
         }
 
         //取excel首行列名
@@ -159,7 +175,9 @@ public class ExcelImport<T> {
 
         for(int i=this.startRow+1;i<this.sheet.getLastRowNum()+1;i++){
             T o = this.getObject(this.sheet.getRow(i));
-            collection.add(o);
+            if(null != o){
+                collection.add(o);
+            }
         }
 
         return collection;
@@ -174,6 +192,9 @@ public class ExcelImport<T> {
     */
     public T getObject(Row row) throws IllegalAccessException,
             NoSuchFieldException, InstantiationException, NoSuchMethodException, InvocationTargetException, IOException, ParseException {
+            if(null == row){
+                return null;
+            }
             if(!this.initialized){
                 this.init();
             }
@@ -234,7 +255,7 @@ public class ExcelImport<T> {
     private void invoke(Method method,Cell cell,Class<?> type,Object instance)
             throws InvocationTargetException, IllegalAccessException, ParseException {
 
-        if(cell == null || type == null){
+        if(cell == null || type == null || (cell+"").length() == 0){
             return;
         }
         //检测excel单元格是否为数字类型
@@ -255,7 +276,7 @@ public class ExcelImport<T> {
                 method.invoke(instance, cell+"");
             }
         }
-        if(dateFlag && type == Date.class){
+        if(type == Date.class){
             Date date = new SimpleDateFormat(ExcelConfig.DATE_IMPORT_FORMAT).parse(cell+"");
             method.invoke(instance,date);
         }else if(numberFlag && type == Integer.class){
@@ -280,7 +301,7 @@ public class ExcelImport<T> {
     }
 
     private void setValue(Field field,Cell cell,Class<?> type,Object instance) throws IllegalAccessException, ParseException {
-        if(cell == null || type == null){
+        if(cell == null || type == null || (cell+"").length() == 0){
             return;
         }
         //检测excel单元格是否为数字类型

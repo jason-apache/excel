@@ -98,6 +98,7 @@
 	<mappers>
         <mapper resource="mapper/ClassesMapper.xml"/>
         <mapper resource="mapper/StudentMapper.xml"/>
+        <mapper resource="mapper/SampleMapper.xml"/>
     </mappers>
 
 </configuration>

@@ -1,19 +1,23 @@
 package com.jason;
 
+import com.jason.entity.demo.Student;
 import com.jason.entity.myexport.ExportNoUseAnno;
 import com.jason.entity.myexport.ExportUseAnno;
 import com.jason.entity.myimport.ImportNoUseAnno;
 import com.jason.entity.myimport.ImportUseAnno;
+import com.jason.mapper.demo.SampleMapper;
 import com.jason.service.ClassesService;
 import com.jason.util.ExcelConfig;
 import com.jason.util.ExcelExport;
 import com.jason.util.ExcelImport;
+import com.jason.util.SqlSessionFactoryUtil;
 import org.apache.poi.ss.usermodel.Sheet;
 import org.junit.Before;
 import org.junit.Test;
 
 import java.io.File;
 import java.io.FileInputStream;
+import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.lang.reflect.InvocationTargetException;
 import java.text.ParseException;
@@ -77,8 +81,12 @@ public class Demo {
     }
 
     @Test
-    public void test(){
-        System.out.println(classesService.selectAll());
+    public void test() throws IOException, NoSuchMethodException, ParseException, InstantiationException, IllegalAccessException, InvocationTargetException, NoSuchFieldException {
+        SampleMapper sampleMapper = SqlSessionFactoryUtil.getMapper(SampleMapper.class);
+        sampleMapper.DML("delete from classes where id = 123456");
+        System.out.println(sampleMapper.getSingleColumnString("select name from classes where id = 1"));
+        System.out.println(sampleMapper.selectObject("select * from classes"));
+        System.out.println(sampleMapper.selectSingleColumnStringList("select name from classes"));
     }
 
     @Test
@@ -155,7 +163,6 @@ public class Demo {
         excelImport.getObjects(list);
         System.out.println(list);
 
-
         /*
         //第二种写法
         ExcelImport<ImportUseAnno> excelImport = new ExcelImport<>(new FileInputStream(file), ImportUseAnno.class);
@@ -169,7 +176,10 @@ public class Demo {
                 if(i == 3){
                     throw new RuntimeException("模拟异常回滚");
                 }
-                list.add(excelImport.getObject(sheet.getRow(i)));
+                ImportUseAnno useAnno = excelImport.getObject(sheet.getRow(i));
+                if(null != useAnno){
+                    list.add(useAnno);
+                }
             }catch (Exception e){
                 System.out.println("第"+i+"行数据导入失败："+e.getMessage());
             }
@@ -202,7 +212,10 @@ public class Demo {
                 if(i == 3){
                     throw new RuntimeException("模拟异常回滚");
                 }
-                list.add(excelImport.getObject(sheet.getRow(i)));
+                ImportNoUseAnno noUseAnno = excelImport.getObject(sheet.getRow(i));
+                if(null != noUseAnno){
+                    list.add(noUseAnno);
+                }
             }catch (Exception e){
                 System.out.println("第"+i+"行数据导入失败："+e.getMessage());
             }
