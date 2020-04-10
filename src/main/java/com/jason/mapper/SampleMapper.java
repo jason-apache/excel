@@ -1,4 +1,4 @@
-package com.jason.mapper.demo;
+package com.jason.mapper;
 
 import org.apache.ibatis.annotations.Param;
 

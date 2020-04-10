@@ -1,4 +1,4 @@
-package com.jason.mapper.demo;
+package com.jason.mapper;
 
 import com.jason.base.CrudMapper;
 import com.jason.entity.demo.Classes;

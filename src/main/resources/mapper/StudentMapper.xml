@@ -2,10 +2,10 @@
 <!DOCTYPE mapper
         PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
-<mapper namespace="com.jason.mapper.demo.StudentMapper">
+<mapper namespace="com.jason.mapper.StudentMapper">
     <resultMap id="result" type="Student">
         <association property="classes" column="cId"
-                     select="com.jason.mapper.demo.ClassesMapper.selectById"/>
+                     select="com.jason.mapper.ClassesMapper.selectById"/>
     </resultMap>
     <sql id="studentColumns">
         s.id as "id",

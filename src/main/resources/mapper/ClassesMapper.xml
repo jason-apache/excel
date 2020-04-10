@@ -2,11 +2,11 @@
 <!DOCTYPE mapper
         PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
-<mapper namespace="com.jason.mapper.demo.ClassesMapper">
+<mapper namespace="com.jason.mapper.ClassesMapper">
     <resultMap id="result" type="Classes">
         <id property="id" column="id"/>
         <collection property="studentList" column="id"
-                    select="com.jason.mapper.demo.StudentMapper.selectByClassesId"/>
+                    select="com.jason.mapper.StudentMapper.selectByClassesId"/>
     </resultMap>
     <sql id="classesColumns">
         s.id as "id",

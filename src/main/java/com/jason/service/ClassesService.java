@@ -2,7 +2,7 @@ package com.jason.service;
 
 import com.jason.base.CrudService;
 import com.jason.entity.demo.Classes;
-import com.jason.mapper.demo.ClassesMapper;
+import com.jason.mapper.ClassesMapper;
 
 /**
  * @Auther: Jason
