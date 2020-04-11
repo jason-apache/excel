@@ -218,6 +218,9 @@ public class ExcelExport<T> {
                         if(useTemplate && templateColumn.containsKey(head)){
                             //获取模板位置
                             Integer index = templateColumn.get(head);
+                            if(index > template.size()-1){
+                                index = template.size()-1;
+                            }
                             String val = template.get(index).get(field.get(t) + "");
                             Cell cell = this.createCell(row, curCellNum++);
                             cell.setCellStyle(styles.get(styleKey));
@@ -235,7 +238,10 @@ public class ExcelExport<T> {
                             if(useTemplate && templateColumn.containsKey(head)){
                                 //获取模板位置
                                 Integer index = templateColumn.get(head);
-                                String val = template.get(index).get(field.get(t) + "");
+                                if(index > template.size()-1){
+                                    index = template.size()-1;
+                                }
+                                String val = template.get(index).get(method.invoke(t) + "");
                                 Cell cell = this.createCell(row, curCellNum++);
                                 cell.setCellStyle(styles.get(styleKey));
                                 cell.setCellValue(val);
@@ -478,7 +484,7 @@ public class ExcelExport<T> {
     * @return com.jason.util.ExcelExport<T>
     */
     public ExcelExport<T> addTemplate(Map<String, String> template) {
-        if(template == null){
+        if(this.template == null){
             this.template = new ArrayList<>();
         }
         this.template.add(template);

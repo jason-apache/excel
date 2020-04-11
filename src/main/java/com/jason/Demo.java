@@ -99,7 +99,7 @@ public class Demo {
         template.put("0","第二个map");
         export.addTemplate(template);
         export.outPutData(useAnnoList);
-        export.writeToFile("C:/Users/user/Desktop/exportUseAnno.xlsx");
+        export.writeToFile("C:/Users/mh262/Desktop/exportUseAnno.xlsx");
 
 
         /*
@@ -156,10 +156,10 @@ public class Demo {
     //使用注解导入
     //支持模板格式
     public void importUseAnno() throws NoSuchMethodException, ParseException, InstantiationException, IOException, IllegalAccessException, InvocationTargetException, NoSuchFieldException {
-        File file = new File("C:/Users/user/Desktop/exportUseAnno.xlsx");
+        File file = new File("C:/Users/mh262/Desktop/exportUseAnno.xlsx");
         ExcelImport<ImportUseAnno> excelImport = new ExcelImport<>(new FileInputStream(file), ImportUseAnno.class);
         //设置模板格式
-        excelImport.addTemplate(ExcelConfig.getTemplateCode());
+        excelImport.setTemplate(ExcelConfig.getTemplateCode());
         List<ImportUseAnno> list = new ArrayList<>();
         excelImport.getObjects(list);
         System.out.println(list);
@@ -168,7 +168,7 @@ public class Demo {
         //第二种写法
         ExcelImport<ImportUseAnno> excelImport = new ExcelImport<>(new FileInputStream(file), ImportUseAnno.class);
         //设置模板格式
-        excelImport.addTemplate(ExcelConfig.getTemplateCode());
+        excelImport.setTemplate(ExcelConfig.getTemplateCode());
         List<ImportUseAnno> list = new ArrayList<>();
         Sheet sheet = excelImport.getSheet();
         //此处i应从1开始
@@ -204,7 +204,7 @@ public class Demo {
         //第二种写法
         ExcelImport<ImportNoUseAnno> excelImport = new ExcelImport<>(new FileInputStream(file), ImportNoUseAnno.class);
         //设置模板格式
-        excelImport.addTemplate(ExcelConfig.getTemplateCode());
+        excelImport.setTemplate(ExcelConfig.getTemplateCode());
         List<ImportNoUseAnno> list = new ArrayList<>();
         Sheet sheet = excelImport.getSheet();
         //此处i应从1开始

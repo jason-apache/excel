@@ -22,7 +22,7 @@ public class ExportUseAnno extends DataEntity<ExportUseAnno> {
     @ExcelField(excelTile = "Short",isImport = false,sort = 2)
     private Short aShort;
 
-    @ExcelField(excelTile = "Byte",isImport = false,sort = 3)
+    @ExcelField(excelTile = "Byte",isImport = false,sort = 3,useTemplate = true,templatePosition = 1)
     private Byte aByte;
 
     @ExcelField(excelTile = "Double",isImport = false,sort = 4)

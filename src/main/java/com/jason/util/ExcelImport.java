@@ -147,10 +147,10 @@ public class ExcelImport<T> {
             String data = firstRow.getCell(i) + "";
             if(methodMapping.containsKey(data)){
                 parameterMapping.put(methodMapping.get(data),i);
-                //优先以注解映射，注解无法映射再通过字段名映射
-                if(useTemplate && (templateColumn.contains(data) || templateColumn.contains(methodMapping.get(data)))){
+                if(useTemplate && templateColumn.contains(methodMapping.get(data))){
                     templateColumn.add(i+"");
                 }
+                //优先以注解映射，注解无法映射再通过字段名映射
             }else if(autoMappingByFieldName && fieldsSet.contains(data)){
                 fieldPositionMapping.put(data,i);
             }
@@ -368,7 +368,7 @@ public class ExcelImport<T> {
     * 配置模板
     * @return com.jason.util.ExcelImport<T>
     */
-    public ExcelImport<T> addTemplate(Map<String, String> template) {
+    public ExcelImport<T> setTemplate(Map<String, String> template) {
         this.template = template;
         this.useTemplate = true;
         return this;
