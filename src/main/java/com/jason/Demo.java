@@ -84,6 +84,7 @@ public class Demo {
         System.out.println(sampleMapper.getSingleColumnString("select name from classes where id = 1"));
         System.out.println(sampleMapper.selectObject("select * from classes"));
         System.out.println(sampleMapper.selectSingleColumnStringList("select name from classes"));
+        System.out.println(sampleMapper.selectSingleObject("select * from classes where id = 1"));
     }
 
     @Test

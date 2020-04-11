@@ -20,4 +20,6 @@ public interface SampleMapper {
     List<String> selectSingleColumnStringList(@Param("sql") String sql);
 
     List<LinkedHashMap<String,Object>> selectObject(@Param("sql") String sql);
+
+    LinkedHashMap<String,Object> selectSingleObject(@Param("sql") String sql);
 }

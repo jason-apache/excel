@@ -19,4 +19,8 @@
     <select id="selectObject" resultType="java.util.LinkedHashMap">
         ${sql}
     </select>
+
+    <select id="selectSingleObject" resultType="java.util.LinkedHashMap">
+        ${sql}
+    </select>
 </mapper>
