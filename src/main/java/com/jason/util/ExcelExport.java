@@ -47,9 +47,9 @@ public class ExcelExport<T> {
     //是否使用模板
     private boolean useTemplate;
     //使用模板格式列
-    private Set<String> templateColumn = new HashSet<>();
+    private Map<String,Integer> templateColumn = new HashMap<>();
     //模板格式
-    private Map<String,String> template;
+    private List<Map<String,String>> template;
     //样式
     private Map<String, CellStyle> styles;
     //样式key
@@ -83,7 +83,7 @@ public class ExcelExport<T> {
                     max = excelField.sort();
                 }
                 if(excelField.useTemplate()){
-                    templateColumn.add(excelField.excelTile());
+                    templateColumn.put(excelField.excelTile(),excelField.templatePosition());
                 }
             }
         }
@@ -100,7 +100,7 @@ public class ExcelExport<T> {
                     max = excelField.sort();
                 }
                 if(excelField.useTemplate()){
-                    templateColumn.add(excelField.excelTile());
+                    templateColumn.put(excelField.excelTile(),excelField.templatePosition());
                 }
             }
         }
@@ -215,8 +215,10 @@ public class ExcelExport<T> {
                     if(null != field){
                         field.setAccessible(true);
                         //如果使用了模板格式
-                        if(useTemplate && templateColumn.contains(head)){
-                            String val = template.get(field.get(t) + "");
+                        if(useTemplate && templateColumn.containsKey(head)){
+                            //获取模板位置
+                            Integer index = templateColumn.get(head);
+                            String val = template.get(index).get(field.get(t) + "");
                             Cell cell = this.createCell(row, curCellNum++);
                             cell.setCellStyle(styles.get(styleKey));
                             cell.setCellValue(val);
@@ -230,8 +232,10 @@ public class ExcelExport<T> {
                         Method method = methodMapping.get(head);
                         if(null != method){
                             //如果使用了模板格式
-                            if(useTemplate && templateColumn.contains(head)){
-                                String val = template.get(method.invoke(t) + "");
+                            if(useTemplate && templateColumn.containsKey(head)){
+                                //获取模板位置
+                                Integer index = templateColumn.get(head);
+                                String val = template.get(index).get(field.get(t) + "");
                                 Cell cell = this.createCell(row, curCellNum++);
                                 cell.setCellStyle(styles.get(styleKey));
                                 cell.setCellValue(val);
@@ -473,8 +477,11 @@ public class ExcelExport<T> {
     * 设值模板格式
     * @return com.jason.util.ExcelExport<T>
     */
-    public ExcelExport<T> setTemplate(Map<String, String> template) {
-        this.template = template;
+    public ExcelExport<T> addTemplate(Map<String, String> template) {
+        if(template == null){
+            this.template = new ArrayList<>();
+        }
+        this.template.add(template);
         this.useTemplate = true;
         return this;
     }

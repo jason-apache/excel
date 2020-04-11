@@ -368,7 +368,7 @@ public class ExcelImport<T> {
     * 配置模板
     * @return com.jason.util.ExcelImport<T>
     */
-    public ExcelImport<T> setTemplate(Map<String, String> template) {
+    public ExcelImport<T> addTemplate(Map<String, String> template) {
         this.template = template;
         this.useTemplate = true;
         return this;

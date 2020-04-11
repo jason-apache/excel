@@ -94,7 +94,10 @@ public class Demo {
 
         ExcelExport<ExportUseAnno> export = new ExcelExport<>(ExportUseAnno.class);
         //配置转换模板格式
-        export.setTemplate(ExcelConfig.getTemplateTitle());
+        export.addTemplate(ExcelConfig.getTemplateTitle());
+        Map<String, String> template = new HashMap<>();
+        template.put("0","第二个map");
+        export.addTemplate(template);
         export.outPutData(useAnnoList);
         export.writeToFile("C:/Users/user/Desktop/exportUseAnno.xlsx");
 
@@ -102,7 +105,7 @@ public class Demo {
         /*
         ExcelExport<ExcelUseAnno> export = new ExcelExport<>(ExcelUseAnno.class);
         //配置转换模板格式
-        export.setTemplate(ExcelConfig.getTemplateTitle());
+        export.addTemplate(ExcelConfig.getTemplateTitle());
         //第二种写法
         for(int i = 0;i<useAnnoList.size();i++){
             try {
@@ -124,7 +127,7 @@ public class Demo {
     public void exportNoUseAnno() throws IOException, InvocationTargetException, IllegalAccessException {
 
         ExcelExport<ExportNoUseAnno> export = new ExcelExport<>(ExportNoUseAnno.class);
-        export.setTemplate(ExcelConfig.getTemplateTitle());
+        export.addTemplate(ExcelConfig.getTemplateTitle());
         //不使用注解时，需传入标题行
         export.outPutData(noUseAnnoList,headRow);
         export.writeToFile("C:/Users/user/Desktop/exportNoUseAnno.xlsx");
@@ -133,7 +136,7 @@ public class Demo {
         /*
         //第二种写法
         ExcelExport<ExcelNoUseAnno> export = new ExcelExport<>(ExcelNoUseAnno.class);
-        export.setTemplate(ExcelConfig.getTemplateTitle());
+        export.addTemplate(ExcelConfig.getTemplateTitle());
         for(int i = 0 ; i < noUseAnnoList.size(); i++){
             try {
                 if(i == 3){
@@ -156,7 +159,7 @@ public class Demo {
         File file = new File("C:/Users/user/Desktop/exportUseAnno.xlsx");
         ExcelImport<ImportUseAnno> excelImport = new ExcelImport<>(new FileInputStream(file), ImportUseAnno.class);
         //设置模板格式
-        excelImport.setTemplate(ExcelConfig.getTemplateCode());
+        excelImport.addTemplate(ExcelConfig.getTemplateCode());
         List<ImportUseAnno> list = new ArrayList<>();
         excelImport.getObjects(list);
         System.out.println(list);
@@ -165,7 +168,7 @@ public class Demo {
         //第二种写法
         ExcelImport<ImportUseAnno> excelImport = new ExcelImport<>(new FileInputStream(file), ImportUseAnno.class);
         //设置模板格式
-        excelImport.setTemplate(ExcelConfig.getTemplateCode());
+        excelImport.addTemplate(ExcelConfig.getTemplateCode());
         List<ImportUseAnno> list = new ArrayList<>();
         Sheet sheet = excelImport.getSheet();
         //此处i应从1开始
@@ -201,7 +204,7 @@ public class Demo {
         //第二种写法
         ExcelImport<ImportNoUseAnno> excelImport = new ExcelImport<>(new FileInputStream(file), ImportNoUseAnno.class);
         //设置模板格式
-        excelImport.setTemplate(ExcelConfig.getTemplateCode());
+        excelImport.addTemplate(ExcelConfig.getTemplateCode());
         List<ImportNoUseAnno> list = new ArrayList<>();
         Sheet sheet = excelImport.getSheet();
         //此处i应从1开始

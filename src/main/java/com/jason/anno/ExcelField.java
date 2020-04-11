@@ -46,6 +46,9 @@ public @interface ExcelField {
     //是否使用模板
     boolean useTemplate() default false;
 
+    //使用模板中的第几个map
+    int templatePosition() default 0;
+
     //是否导入
     boolean isImport() default true;
 }
