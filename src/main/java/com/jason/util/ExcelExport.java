@@ -334,9 +334,10 @@ public class ExcelExport<T> {
                     newHead[curCellNum] = head;
                 }
                 Cell cell = row.createCell(curCellNum++);
-                cell.setCellStyle(styles.get(ExcelConfig.Style.HEAD_ROW));
                 cell.setCellValue(head);
-                this.sheet.setColumnWidth((short)i,head.getBytes().length * 2 * 256);
+                cell.setCellStyle(styles.get(ExcelConfig.Style.HEAD_ROW));
+                //下面这行代码容易引起文件受损
+                //this.sheet.setColumnWidth((short)i,head.getBytes().length * 2 * 256);
             }
         }
         if(null != newHead){
