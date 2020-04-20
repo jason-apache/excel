@@ -171,7 +171,7 @@ public class ExcelImport<T> {
     */
     public T getObject(Row row) throws IllegalAccessException, InstantiationException,
             NoSuchMethodException, InvocationTargetException, IOException, ParseException {
-        if(null == row){
+        if(null == row || row.getRowNum() == 0){
             return null;
         }
         if(!this.initialized){
@@ -335,7 +335,7 @@ public class ExcelImport<T> {
         }
 
         if(field.getType() == Date.class){
-            Date date = new SimpleDateFormat(ExcelConfig.DATE_IMPORT_FORMAT).parse(cell+"");
+            Date date = new SimpleDateFormat(ExcelConfig.DATE_IMPORT_FORMAT).parse(cell.toString());
             field.set(instance,date);
         }else if(field.getType() == Integer.class){
             field.set(instance,new Double(cell.getNumericCellValue()).intValue());
