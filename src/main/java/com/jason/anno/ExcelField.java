@@ -6,7 +6,6 @@ import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
 
 /**
- * TODO
  *
  * @Author jason
  * @createTime 2019年12月18日 21:12
@@ -23,8 +22,8 @@ public @interface ExcelField {
     //从第几行开始读取
     int startRow() default -1;
 
-    //从第几个工作簿开始读取
-    int startSheet() default -1;
+    //从第几个工作簿读取
+    int sheetIndex() default -1;
 
     String sheetName() default "";
 

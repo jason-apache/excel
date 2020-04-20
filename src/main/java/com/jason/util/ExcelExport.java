@@ -199,7 +199,7 @@ public class ExcelExport<T> {
                 Object o = annotationMapping.get(excelField);
                 if(o instanceof Method){
                     if(excelField.useTemplate()){
-                        String val = template.get(excelField.templatePosition()).get(((Method) o).invoke(t) + "");
+                        String val = template.get(excelField.templatePosition()).get(((Method) o).invoke(t).toString());
                         Cell cell = this.createCell(row, curCellNum++);
                         cell.setCellStyle(styles.get(styleKey));
                         cell.setCellValue(val);
@@ -212,7 +212,7 @@ public class ExcelExport<T> {
                 }else if(o instanceof Field){
                     ((Field) o).setAccessible(true);
                     if(excelField.useTemplate()){
-                        String val = template.get(excelField.templatePosition()).get(((Field) o).get(t) + "");
+                        String val = template.get(excelField.templatePosition()).get(((Field) o).get(t).toString());
                         Cell cell = this.createCell(row, curCellNum++);
                         cell.setCellStyle(styles.get(styleKey));
                         cell.setCellValue(val);
@@ -414,7 +414,7 @@ public class ExcelExport<T> {
         }
 
         if(object instanceof String){
-            cell.setCellValue(object+"");
+            cell.setCellValue(object.toString());
         }else if(object instanceof Integer){
             cell.setCellValue((Integer) object);
         }else if(object instanceof Long){
@@ -422,7 +422,7 @@ public class ExcelExport<T> {
         }else if(object instanceof Double){
             cell.setCellValue((Double) object);
         }else if(object instanceof Character){
-            cell.setCellValue(object+"");
+            cell.setCellValue(object.toString());
         }else if(object instanceof Short){
             cell.setCellValue((Short) object);
         }else if(object instanceof Byte){

@@ -66,7 +66,7 @@ public class ExcelImport<T> {
         //根据注解中的属性设初值
         if(null != field){
             startRow = field.startRow() > 0 ? field.startRow() - 1 : 0;
-            startSheet = field.startSheet() > 0 ? field.startSheet() - 1 : 0;
+            startSheet = field.sheetIndex() > 0 ? field.sheetIndex() - 1 : 0;
             sheetName = "".equals(field.sheetName().trim()) ? null : field.sheetName();
         }
         this.clazz = clazz;
@@ -130,7 +130,7 @@ public class ExcelImport<T> {
         Row firstRow = sheet.getRow(startRow);
         //取出excel列的位置index，放入title映射
         for(int i=0;i<firstRow.getLastCellNum();i++){
-            String data = firstRow.getCell(i) + "";
+            String data = firstRow.getCell(i) == null ? "" : firstRow.getCell(i).toString();
             titleMapping.put(data,i);
         }
         this.initialized = true;
@@ -204,7 +204,7 @@ public class ExcelImport<T> {
                         Method targetMethod = target.getClass().getMethod(excelField.targetMethod(), excelField.targetClass());
                         //使用模板
                         if(useTemplate && excelField.useTemplate()){
-                            String val = template.get(cell + "");
+                            String val = template.get(cell.toString());
                             targetMethod.invoke(target,val);
                         }else{
                             this.invoke(targetMethod,cell,target);
@@ -214,7 +214,7 @@ public class ExcelImport<T> {
                     }else {
                         //使用模板
                         if(useTemplate && excelField.useTemplate()){
-                            String val = template.get(cell + "");
+                            String val = template.get(cell.toString());
                             ((Method) o).invoke(t,val);
                         }else{
                             this.invoke(((Method) o),cell,t);
@@ -224,7 +224,7 @@ public class ExcelImport<T> {
                 }else if(o instanceof Field){
                     ((Field) o).setAccessible(true);
                     if(useTemplate && excelField.useTemplate()){
-                        String val = template.get(cell + "");
+                        String val = template.get(cell.toString());
                         ((Field) o).set(t,val);
                     }else{
                         this.setValue(((Field) o),cell,t);
@@ -282,7 +282,7 @@ public class ExcelImport<T> {
             }
         }
         if(type == Date.class){
-            Date date = new SimpleDateFormat(ExcelConfig.DATE_IMPORT_FORMAT).parse(cell+"");
+            Date date = new SimpleDateFormat(ExcelConfig.DATE_IMPORT_FORMAT).parse(cell.toString());
             method.invoke(instance,date);
         }else if(type == Integer.class){
             method.invoke(instance,new Double(cell.toString()).intValue());

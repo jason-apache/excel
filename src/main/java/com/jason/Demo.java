@@ -157,7 +157,7 @@ public class Demo {
     //使用注解导入
     //支持模板格式
     public void importUseAnno() throws NoSuchMethodException, ParseException, InstantiationException, IOException, IllegalAccessException, InvocationTargetException, NoSuchFieldException {
-        File file = new File("C:/Users/mh262/Desktop/exportUseAnno.xlsx");
+        File file = new File("C:/Users/mh262/Desktop/4.科研设备信息表-电气试验室.xlsx");
         ExcelImport<ImportUseAnno> excelImport = new ExcelImport<>(new FileInputStream(file), ImportUseAnno.class);
         //设置模板格式
         excelImport.setTemplate(ExcelConfig.getTemplateCode());
