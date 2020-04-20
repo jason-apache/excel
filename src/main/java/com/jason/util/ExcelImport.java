@@ -171,7 +171,7 @@ public class ExcelImport<T> {
     */
     public T getObject(Row row) throws IllegalAccessException, InstantiationException,
             NoSuchMethodException, InvocationTargetException, IOException, ParseException {
-        if(null == row || row.getRowNum() == 0){
+        if(null == row || row.getLastCellNum() == 0){
             return null;
         }
         if(!this.initialized){
