@@ -161,8 +161,9 @@ public class Demo {
         //设置模板格式
         excelImport.setTemplate(ExcelConfig.getTemplateCode());
         List<ImportUseAnno> list = new ArrayList<>();
-        excelImport.getObjects(list);
+        String errorMsg = excelImport.getObjects(list);
         System.out.println(list);
+        System.out.println(errorMsg);
 
         /*
         //第二种写法

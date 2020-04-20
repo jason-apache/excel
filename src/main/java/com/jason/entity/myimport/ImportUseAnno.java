@@ -14,6 +14,7 @@ import java.util.Date;
 @ExcelField(startRow = 1,startSheet = 1)
 public class ImportUseAnno extends DataEntity<ImportUseAnno> {
 
+    @ExcelField(title = "Integer")
     private Integer aInteger;
 
     private Long aLong;
@@ -40,7 +41,6 @@ public class ImportUseAnno extends DataEntity<ImportUseAnno> {
         return aInteger;
     }
 
-    @ExcelField(title = "Integer")
     public ImportUseAnno setaInteger(Integer aInteger) {
         this.aInteger = aInteger;
         return this;
@@ -120,7 +120,7 @@ public class ImportUseAnno extends DataEntity<ImportUseAnno> {
         return parent;
     }
 
-    @ExcelField(title = "parent",targetMethod = "setTemplate",targetClass = String.class,useTemplate = true)
+    @ExcelField(title = "parent",targetMethod = "setTemplate",targetClass = String.class)
     public ImportUseAnno setParent(ImportUseAnno parent) {
         this.parent = parent;
         return this;

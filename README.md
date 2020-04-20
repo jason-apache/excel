@@ -7,8 +7,6 @@
 
 针对导入导出一些细节性的说明：
 
-import仅支持在set方法上加注解，export支持字段和get方法的注解
-
-export优先字段的注解
+import支持字段和set方法的注解，export支持字段和get方法的注解
 
 export不支持单元格合并

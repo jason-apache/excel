@@ -9,7 +9,9 @@ import org.apache.poi.ss.usermodel.Row;
 import org.apache.poi.ss.usermodel.Sheet;
 import org.apache.poi.xssf.usermodel.XSSFWorkbook;
 
-import java.io.*;
+import java.io.ByteArrayInputStream;
+import java.io.IOException;
+import java.io.InputStream;
 import java.lang.reflect.Field;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
@@ -25,43 +27,37 @@ import java.util.*;
  */
 public class ExcelImport<T> {
 
+    //解析起始行
     private int startRow;
+    //解析工作簿
     private int startSheet;
+    //工作簿名称
     private String sheetName;
-    private Class<T> clazz;
-    private InputStream is;
-    private Method[] methods;
-    private XSSFWorkbook xssfWorkbook;
-    private HSSFWorkbook hssfWorkbook;
+    //实体类型
+    private final Class<T> clazz;
+    //输入流
+    private final InputStream is;
+    //字节数组，保存流
     private byte[] bytes;
+
     private Sheet sheet;
+    //是否初始化
     private boolean initialized;
+    //是否使用模板转换
     private boolean useTemplate;
+    //自动根据字段名称映射
     private boolean autoMappingByFieldName = true;
 
-    //方法名与excel列的映射关系，title对应excel的列名
-    private Map<String,String> methodMapping = new HashMap<>();
-
-    //参数位置与方法名的映射关系
-    private Map<String,Integer> parameterMapping = new HashMap<>();
-
-    //参数类型与方法名的映射关系
-    private Map<String,Class<?>> argsTypeMapping = new HashMap<>();
-
-    //当使用引用类型时，当前类方法与目标类方法名的映射
-    private Map<String,String> targetMethodMapping = new HashMap<>();
-
-    //当使用引用类型时，目标类方法参数类型的映射
-    private Map<String,Class<?>> targetFieldTypeMapping = new HashMap<>();
+    //注解
+    private final List<ExcelField> annotationList = new ArrayList<>();
+    //注解映射关系
+    private final Map<ExcelField,Object> annotationMapping = new HashMap<>();
+    //title映射关系
+    private final Map<String,Integer> titleMapping = new HashMap<>();
 
     //不声明方法式设值时，默认以字段名映射excel
-    private Set<String> fieldsSet;
+    private Set<Field> fieldsSet;
 
-    //不声明方法式设值时，字段与excel的映射关系
-    private Map<String,Integer> fieldPositionMapping = new HashMap<>();
-
-    //使用模板格式列
-    private Set<String> templateColumn = new HashSet<>();
     //模板格式
     private Map<String,String> template;
 
@@ -74,45 +70,35 @@ public class ExcelImport<T> {
             sheetName = "".equals(field.sheetName().trim()) ? null : field.sheetName();
         }
         this.clazz = clazz;
-        this.methods = clazz.getDeclaredMethods();
         this.is = is;
         this.initMethods();
     }
 
     private void initMethods(){
         Field[] fields = clazz.getDeclaredFields();
-        if(autoMappingByFieldName){
-            fieldsSet = new HashSet<>();
-            for (int i = 0;i < fields.length; i++){
-                Field field = fields[i];
-                fieldsSet.add(field.getName());
-            }
-        }
-        for(int i=0;i<methods.length;i++){
+        Method[] methods = clazz.getDeclaredMethods();
+        //自动根据字段名映射
+        for(int i = 0; i< methods.length; i ++ ){
             Method method = methods[i];
             ExcelField excelField = method.getAnnotation(ExcelField.class);
-            if(excelField == null || !excelField.isImport()){
-                continue;
+            if(null != excelField && excelField.isImport() && StringUtil.isNotBlank(excelField.title())){
+                annotationList.add(excelField);
+                annotationMapping.put(excelField,method);
             }
-            if(0 <= excelField.position()){
-                //设置位置映射关系
-                parameterMapping.put(method.getName(),excelField.position());
-                argsTypeMapping.put(method.getName(),method.getParameterTypes()[0]);
-                if(excelField.useTemplate()){
-                    templateColumn.add(method.getName());
+        }
+        for(int i = 0 ; i < fields.length ; i ++ ){
+            Field field = fields[i];
+            ExcelField excelField = field.getAnnotation(ExcelField.class);
+            if(null != excelField && excelField.isImport() && StringUtil.isNotBlank(excelField.title())){
+                annotationList.add(excelField);
+                annotationMapping.put(excelField,field);
+            }else {
+                if(autoMappingByFieldName){
+                    if(null == fieldsSet){
+                        fieldsSet = new HashSet<>();
+                    }
+                    fieldsSet.add(field);
                 }
-            }else if(!"".equals(excelField.title())){
-                //设置方法名与列名映射
-                methodMapping.put(excelField.title(),method.getName());
-                argsTypeMapping.put(method.getName(),method.getParameterTypes()[0]);
-                if(excelField.useTemplate()){
-                    templateColumn.add(method.getName());
-                }
-            }
-            //引用类型目标方法映射
-            if(!"".equals(excelField.targetMethod())){
-                targetMethodMapping.put(method.getName(),excelField.targetMethod());
-                targetFieldTypeMapping.put(method.getName(),excelField.targetClass());
             }
         }
     }
@@ -122,7 +108,7 @@ public class ExcelImport<T> {
         try {
             bytes = new byte[is.available()];
             is.read(bytes);
-            xssfWorkbook = new XSSFWorkbook(new ByteArrayInputStream(bytes));
+            XSSFWorkbook xssfWorkbook = new XSSFWorkbook(new ByteArrayInputStream(bytes));
             //初始化
             if(StringUtil.isNotBlank(sheetName)){
                 sheet = xssfWorkbook.getSheet(sheetName);
@@ -131,7 +117,7 @@ public class ExcelImport<T> {
             }
         }catch (Exception e){
             System.out.println("格式不匹配");
-            hssfWorkbook = new HSSFWorkbook(new ByteArrayInputStream(bytes));
+            HSSFWorkbook hssfWorkbook = new HSSFWorkbook(new ByteArrayInputStream(bytes));
             //初始化
             if(StringUtil.isNotBlank(sheetName)){
                 sheet = hssfWorkbook.getSheet(sheetName);
@@ -142,18 +128,10 @@ public class ExcelImport<T> {
 
         //取excel首行列名
         Row firstRow = sheet.getRow(startRow);
-        //根据方法名映射，取出excel对应列的位置index，放入参数映射
+        //取出excel列的位置index，放入title映射
         for(int i=0;i<firstRow.getLastCellNum();i++){
             String data = firstRow.getCell(i) + "";
-            if(methodMapping.containsKey(data)){
-                parameterMapping.put(methodMapping.get(data),i);
-                if(useTemplate && templateColumn.contains(methodMapping.get(data))){
-                    templateColumn.add(i+"");
-                }
-                //优先以注解映射，注解无法映射再通过字段名映射
-            }else if(autoMappingByFieldName && fieldsSet.contains(data)){
-                fieldPositionMapping.put(data,i);
-            }
+            titleMapping.put(data,i);
         }
         this.initialized = true;
     }
@@ -162,25 +140,26 @@ public class ExcelImport<T> {
      * @author Jason
      * @date 2020/3/31 13:21
      * @params [file, startRow, startSheet, collection]
-     * 转为Java对象
-     * @return java.util.Collection<T>
+     * 转为Java对象 返回错误信息
+     * @return String
      */
-    public Collection<T> getObjects(Collection<T> collection)
-            throws InvocationTargetException, NoSuchMethodException, NoSuchFieldException, InstantiationException,
-            IllegalAccessException, IOException, ParseException {
+    public String getObjects(Collection<T> collection) throws IOException {
 
         if(!this.initialized){
             this.init();
         }
-
+        StringBuilder errorMsg = new StringBuilder();
         for(int i=this.startRow+1;i<this.sheet.getLastRowNum()+1;i++){
-            T o = this.getObject(this.sheet.getRow(i));
-            if(null != o){
-                collection.add(o);
+            try {
+                T o = this.getObject(this.sheet.getRow(i));
+                if(null != o){
+                    collection.add(o);
+                }
+            }catch (Exception e){
+                errorMsg.append("错误信息：第").append(i).append("行，").append(e.getMessage()).append("\r\n");
             }
         }
-
-        return collection;
+        return errorMsg.toString();
     }
 
     /**
@@ -190,72 +169,92 @@ public class ExcelImport<T> {
     * 解析excel
     * @return T
     */
-    public T getObject(Row row) throws IllegalAccessException,
-            NoSuchFieldException, InstantiationException, NoSuchMethodException, InvocationTargetException, IOException, ParseException {
-            if(null == row){
-                return null;
-            }
-            if(!this.initialized){
-                this.init();
-            }
-            T o = (T) clazz.newInstance();
-            //根据参数位置映射，开始解析excel
-            for (String s : parameterMapping.keySet()) {
-                //根据方法名、参数类型取出对象对应方法
-                Method method = clazz.getDeclaredMethod(s, argsTypeMapping.get(s));
-                //取出单元格
-                Integer index = parameterMapping.get(s);
-                Cell cell = row.getCell(index);
-
-                //存在引用类型时，先试图设值引用对象的属性，再set到实体中
-                String typeMethod = targetMethodMapping.get(s);
-                if(StringUtil.isNotBlank(typeMethod)){
-                    Object target = argsTypeMapping.get(s).newInstance();
-                    Method targetMethod = target.getClass().getMethod(typeMethod, targetFieldTypeMapping.get(s));
-                    Class<?> type = targetFieldTypeMapping.get(s);
-                    //从模板中获取
-                    if(useTemplate && templateColumn.contains(index+"") && type == String.class){
-                        String val = template.get(cell + "");
-                        targetMethod.invoke(target,val);
-                    }else{
-                        this.invoke(targetMethod,cell,type,target);
+    public T getObject(Row row) throws IllegalAccessException, InstantiationException,
+            NoSuchMethodException, InvocationTargetException, IOException, ParseException {
+        if(null == row){
+            return null;
+        }
+        if(!this.initialized){
+            this.init();
+        }
+        T t = (T) clazz.newInstance();
+        int size = annotationList.size();
+        //根据参数位置映射，开始解析excel
+        for(int i = 0 ; i < size ; i ++ ){
+            ExcelField excelField = annotationList.get(i);
+            if(null != excelField){
+                Object o = annotationMapping.get(excelField);
+                Cell cell = null;
+                //如果使用了position属性
+                if(excelField.position() != -1){
+                    cell = row.getCell(excelField.position());
+                }else {
+                    cell = row.getCell(titleMapping.get(excelField.title()));
+                }
+                //方法上的注解
+                if(o instanceof Method){
+                    //使用了目标方法
+                    if(StringUtil.isNotBlank(excelField.targetMethod())){
+                        Object target = ((Method) o).getParameterTypes()[0].newInstance();
+                        Method targetMethod = target.getClass().getMethod(excelField.targetMethod(), excelField.targetClass());
+                        //使用模板
+                        if(useTemplate && excelField.useTemplate()){
+                            String val = template.get(cell + "");
+                            targetMethod.invoke(target,val);
+                        }else{
+                            this.invoke(targetMethod,cell,target);
+                        }
+                        //set到实体中
+                        ((Method) o).invoke(t,target);
+                    }else {
+                        //使用模板
+                        if(useTemplate && excelField.useTemplate()){
+                            String val = template.get(cell + "");
+                            ((Method) o).invoke(t,val);
+                        }else{
+                            this.invoke(((Method) o),cell,t);
+                        }
                     }
-                    //set到实体中
-                    method.invoke(o,target);
-                }else{
-                    //取出对应参数类型
-                    Class<?> type = argsTypeMapping.get(s);
-
-                    //从模板中获取
-                    if(useTemplate && templateColumn.contains(index+"") && type == String.class){
+                    //字段上的注解
+                }else if(o instanceof Field){
+                    ((Field) o).setAccessible(true);
+                    if(useTemplate && excelField.useTemplate()){
                         String val = template.get(cell + "");
-                        method.invoke(o,val);
+                        ((Field) o).set(t,val);
                     }else{
-                        this.invoke(method,cell,type,o);
+                        this.setValue(((Field) o),cell,t);
                     }
                 }
             }
-            //如果对象中字段值为空，则代表注解映射失败，尝试按照字段名设值
-            for (String s : fieldPositionMapping.keySet()){
-                Field field = o.getClass().getDeclaredField(s);
-                //获取私有属性访问权
-                field.setAccessible(true);
-                if(null == field.get(o)){
-                    Cell cell = row.getCell(fieldPositionMapping.get(field.getName()));
-                    Class<?> type = field.getType();
-                    this.setValue(field,cell,type,o);
+        }
+        //是否自动根据参数名映射 默认开启
+        if(autoMappingByFieldName){
+            for(Field f : fieldsSet){
+                f.setAccessible(true);
+                Integer index = titleMapping.get(f.getName());
+                if(null != index){
+                    if(null == f.get(t)){
+                        Cell cell = row.getCell(index);
+                        this.setValue(f,cell,t);
+                    }
                 }
             }
-
-            return o;
+        }
+        return t;
     }
 
 
-    //根据参数类型设值
-    private void invoke(Method method,Cell cell,Class<?> type,Object instance)
+    /**
+    * @author Jason
+    * @date 2020/4/20 14:32
+    * @params [method, cell, instance]
+    * 根据不同参数类型执行方法
+    * @return void
+    */
+    private void invoke(Method method,Cell cell,Object instance)
             throws InvocationTargetException, IllegalAccessException, ParseException {
 
-        if(cell == null || type == null || (cell+"").length() == 0){
+        if(cell == null || cell.toString().length() == 0){
             return;
         }
         //检测excel单元格是否为数字类型
@@ -263,6 +262,7 @@ public class ExcelImport<T> {
         //检测excel单元格是否为日期类型
         boolean dateFlag = numberFlag && HSSFDateUtil.isCellDateFormatted(cell);
 
+        Class<?> type = method.getParameterTypes()[0];
         //判断对象的方法参数的类型
         if(type == String.class){
             if(dateFlag){
@@ -273,35 +273,42 @@ public class ExcelImport<T> {
                 method.invoke(instance,
                         new Double(cell.getNumericCellValue()).intValue()+"");
             }else{
-                method.invoke(instance, cell+"");
+                method.invoke(instance, cell.toString());
             }
         }
         if(type == Date.class){
             Date date = new SimpleDateFormat(ExcelConfig.DATE_IMPORT_FORMAT).parse(cell+"");
             method.invoke(instance,date);
-        }else if(numberFlag && type == Integer.class){
-            method.invoke(instance,new Double(cell.getNumericCellValue()).intValue());
-        }else if(numberFlag && type == Double.class){
-            method.invoke(instance,cell.getNumericCellValue());
-        }else if(numberFlag && type == Long.class){
-            method.invoke(instance,new Double(cell.getNumericCellValue()).longValue());
-        }else if(numberFlag && type == Float.class){
-            method.invoke(instance,new Double(cell.getNumericCellValue()).floatValue());
-        }else if(numberFlag && type == Short.class){
-            method.invoke(instance,new Double(cell.getNumericCellValue()).shortValue());
-        }else if(numberFlag && type == Byte.class){
-            method.invoke(instance,new Double(cell.getNumericCellValue()).byteValue());
+        }else if(type == Integer.class){
+            method.invoke(instance,new Double(cell.toString()).intValue());
+        }else if(type == Double.class){
+            method.invoke(instance,new Double(cell.toString()));
+        }else if(type == Long.class){
+            method.invoke(instance,new Double(cell.toString()).longValue());
+        }else if(type == Float.class){
+            method.invoke(instance,new Double(cell.toString()).floatValue());
+        }else if(type == Short.class){
+            method.invoke(instance,new Double(cell.toString()).shortValue());
+        }else if(type == Byte.class){
+            method.invoke(instance,new Double(cell.toString()).byteValue());
         }else if(type == Boolean.class){
-            if(ExcelConfig.IMPORT_TRUE.equals(cell+"")){
+            if(ExcelConfig.IMPORT_TRUE.equals(cell.toString())){
                 method.invoke(instance,true);
-            }else if(ExcelConfig.IMPORT_FALSE.equals(cell+"")){
+            }else if(ExcelConfig.IMPORT_FALSE.equals(cell.toString())){
                 method.invoke(instance,false);
             }
         }
     }
 
-    private void setValue(Field field,Cell cell,Class<?> type,Object instance) throws IllegalAccessException, ParseException {
-        if(cell == null || type == null || (cell+"").length() == 0){
+    /**
+    * @author Jason
+    * @date 2020/4/20 14:32
+    * @params [field, cell, instance]
+    * 根据不同参数类型给字段设置
+    * @return void
+    */
+    private void setValue(Field field,Cell cell,Object instance) throws IllegalAccessException, ParseException {
+        if(cell == null || cell.toString().length() == 0){
             return;
         }
         //检测excel单元格是否为数字类型
@@ -309,38 +316,38 @@ public class ExcelImport<T> {
         //检测excel单元格是否为日期类型
         boolean dateFlag = numberFlag && HSSFDateUtil.isCellDateFormatted(cell);
 
-        if(type == String.class){
+        if(field.getType() == String.class){
             if(dateFlag){
                 Date date = cell.getDateCellValue();
                 String format = new SimpleDateFormat(ExcelConfig.DATE_IMPORT_FORMAT).format(date);
                 field.set(instance, format);
             }else if(numberFlag){
                 field.set(instance,
-                        new Double(cell.getNumericCellValue()).intValue()+"");
+                        new Double(cell.getNumericCellValue()).intValue());
             }else{
-                field.set(instance, cell+"");
+                field.set(instance, cell.toString());
             }
         }
 
-        if(type == Date.class){
+        if(field.getType() == Date.class){
             Date date = new SimpleDateFormat(ExcelConfig.DATE_IMPORT_FORMAT).parse(cell+"");
             field.set(instance,date);
-        }else if(numberFlag && type == Integer.class){
+        }else if(field.getType() == Integer.class){
             field.set(instance,new Double(cell.getNumericCellValue()).intValue());
-        }else if(numberFlag && type == Double.class){
+        }else if(field.getType() == Double.class){
             field.set(instance,cell.getNumericCellValue());
-        }else if(numberFlag && type == Long.class){
+        }else if(field.getType() == Long.class){
             field.set(instance,new Double(cell.getNumericCellValue()).longValue());
-        }else if(numberFlag && type == Float.class){
+        }else if(field.getType() == Float.class){
             field.set(instance,new Double(cell.getNumericCellValue()).floatValue());
-        }else if(numberFlag && type == Short.class){
+        }else if(field.getType() == Short.class){
             field.set(instance,new Double(cell.getNumericCellValue()).shortValue());
-        }else if(numberFlag && type == Byte.class){
+        }else if(field.getType() == Byte.class){
             field.set(instance,new Double(cell.getNumericCellValue()).byteValue());
-        }else if(type == Boolean.class){
-            if(ExcelConfig.IMPORT_TRUE.equals(cell+"")){
+        }else if(field.getType() == Boolean.class){
+            if(ExcelConfig.IMPORT_TRUE.equals(cell.toString())){
                 field.set(instance,true);
-            }else if(ExcelConfig.IMPORT_FALSE.equals(cell+"")){
+            }else if(ExcelConfig.IMPORT_FALSE.equals(cell.toString())){
                 field.set(instance,false);
             }
         }

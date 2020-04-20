@@ -6,7 +6,10 @@ import org.apache.poi.xssf.streaming.SXSSFSheet;
 import org.apache.poi.xssf.streaming.SXSSFWorkbook;
 
 import javax.servlet.http.HttpServletResponse;
-import java.io.*;
+import java.io.File;
+import java.io.FileOutputStream;
+import java.io.IOException;
+import java.io.OutputStream;
 import java.lang.reflect.Field;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
@@ -36,18 +39,12 @@ public class ExcelExport<T> {
     //当前行
     private int curRow = 0;
 
-    //字段映射
-    private Map<String,Field> filedMapping = new HashMap<>();
+    //注解
+    private final List<ExcelField> annotationList = new ArrayList<>();
+    //注解映射关系
+    private final Map<ExcelField,Object> annotationMapping = new HashMap<>();
     //不使用注解，默认以字段顺序
     private Field[] fields;
-    //方法映射
-    private Map<String,Method> methodMapping = new HashMap<>();
-    //排序映射
-    private Map<String,Integer> sortMapping = new HashMap<>();
-    //是否使用模板
-    private boolean useTemplate;
-    //使用模板格式列
-    private Map<String,Integer> templateColumn = new HashMap<>();
     //模板格式
     private List<Map<String,String>> template;
     //样式
@@ -73,47 +70,30 @@ public class ExcelExport<T> {
         Field[] fields = this.clazz.getDeclaredFields();
         this.fields = fields;
         //排序
-        Arrays.sort(fields, Comparator.comparingInt(o -> o.getAnnotation(ExcelField.class) == null ? -1 : o.getAnnotation(ExcelField.class).sort()));
         for(int i = 0; i < fields.length; i++){
             ExcelField excelField = fields[i].getAnnotation(ExcelField.class);
-            if(null != excelField && StringUtil.isNotBlank(excelField.title()) && !excelField.isImport()){
-                filedMapping.put(excelField.title(),fields[i]);
-                sortMapping.put(excelField.title(),excelField.sort());
-                if(excelField.sort() > max){
-                    max = excelField.sort();
-                }
-                if(excelField.useTemplate()){
-                    templateColumn.put(excelField.title(),excelField.templatePosition());
-                }
+            if(null != excelField && !excelField.isImport() && StringUtil.isNotBlank(excelField.title())){
+                annotationList.add(excelField);
+                annotationMapping.put(excelField,fields[i]);
             }
         }
         //获取Class方法
         Method[] methods = this.clazz.getMethods();
         //排序
-        Arrays.sort(methods, Comparator.comparingInt(o -> o.getAnnotation(ExcelField.class) == null ? -1 : o.getAnnotation(ExcelField.class).sort()));
         for(int i = 0 ; i < methods.length; i++){
             ExcelField excelField = methods[i].getAnnotation(ExcelField.class);
-            if(null != excelField && StringUtil.isNotBlank(excelField.title()) && !excelField.isImport()){
-                methodMapping.put(excelField.title(),methods[i]);
-                sortMapping.put(excelField.title(),excelField.sort());
-                if(excelField.sort() > max){
-                    max = excelField.sort();
-                }
-                if(excelField.useTemplate()){
-                    templateColumn.put(excelField.title(),excelField.templatePosition());
-                }
+            if(null != excelField && !excelField.isImport() && StringUtil.isNotBlank(excelField.title())){
+                annotationList.add(excelField);
+                annotationMapping.put(excelField,methods[i]);
             }
         }
+        //排序
+        annotationList.sort(Comparator.comparingInt(ExcelField::sort));
 
-        if(max <= 0){
-            max = sortMapping.size();
-        }
         //首行数组
-        headRow = new String[max];
-        //根据排序设置首行顺序
-        for(String s : sortMapping.keySet()){
-            Integer sort = sortMapping.get(s);
-            headRow[sort <= 0 ? 0 : sort-1] = s;
+        headRow = new String[annotationList.size()];
+        for(int i = 0 ; i < annotationList.size() ; i ++ ){
+            headRow[i] = annotationList.get(i).title();
         }
 
         this.sxssfWorkbook = new SXSSFWorkbook();
@@ -199,7 +179,7 @@ public class ExcelExport<T> {
             this.createHeadRow(this.headRow);
         }
 
-        int hLength = headRow.length;
+        int size = annotationList.size();
         int curCellNum = 0;
 
         Row row = this.createRow();
@@ -207,51 +187,32 @@ public class ExcelExport<T> {
         //是否使用注解
         if(useAnnotation){
             //开始创建数据
-            for(int i = 0 ; i < hLength; i++){
-                String head = headRow[i];
-                //优先字段上的注解
-                if(null != head){
-                    Field field = filedMapping.get(head);
-                    if(null != field){
-                        field.setAccessible(true);
-                        //如果使用了模板格式
-                        if(useTemplate && templateColumn.containsKey(head)){
-                            //获取模板位置
-                            Integer index = templateColumn.get(head);
-                            if(index > template.size()-1){
-                                index = template.size()-1;
-                            }
-                            String val = template.get(index).get(field.get(t) + "");
-                            Cell cell = this.createCell(row, curCellNum++);
-                            cell.setCellStyle(styles.get(styleKey));
-                            cell.setCellValue(val);
-                        }else{
-                            Cell cell = this.createCell(row, curCellNum++);
-                            cell.setCellStyle(styles.get(styleKey));
-                            this.setValue(cell,field,t);
-                        }
+            for(int i = 0 ; i < size; i++){
+                ExcelField excelField = annotationList.get(i);
+                Object o = annotationMapping.get(excelField);
+                if(o instanceof Method){
+                    if(excelField.useTemplate()){
+                        String val = template.get(excelField.templatePosition()).get(((Method) o).invoke(t) + "");
+                        Cell cell = this.createCell(row, curCellNum++);
+                        cell.setCellStyle(styles.get(styleKey));
+                        cell.setCellValue(val);
                     }else{
-                        //其次是方法上的注解
-                        Method method = methodMapping.get(head);
-                        if(null != method){
-                            //如果使用了模板格式
-                            if(useTemplate && templateColumn.containsKey(head)){
-                                //获取模板位置
-                                Integer index = templateColumn.get(head);
-                                if(index > template.size()-1){
-                                    index = template.size()-1;
-                                }
-                                String val = template.get(index).get(method.invoke(t) + "");
-                                Cell cell = this.createCell(row, curCellNum++);
-                                cell.setCellStyle(styles.get(styleKey));
-                                cell.setCellValue(val);
-                            }else{
-                                Object object = method.invoke(t);
-                                Cell cell = this.createCell(row, curCellNum++);
-                                cell.setCellStyle(styles.get(styleKey));
-                                this.setValue(cell,object);
-                            }
-                        }
+                        Object object = ((Method)o).invoke(t);
+                        Cell cell = this.createCell(row, curCellNum++);
+                        cell.setCellStyle(styles.get(styleKey));
+                        this.setValue(cell,object);
+                    }
+                }else if(o instanceof Field){
+                    ((Field) o).setAccessible(true);
+                    if(excelField.useTemplate()){
+                        String val = template.get(excelField.templatePosition()).get(((Field) o).get(t) + "");
+                        Cell cell = this.createCell(row, curCellNum++);
+                        cell.setCellStyle(styles.get(styleKey));
+                        cell.setCellValue(val);
+                    }else{
+                        Cell cell = this.createCell(row, curCellNum++);
+                        cell.setCellStyle(styles.get(styleKey));
+                        this.setValue(cell,((Field) o),t);
                     }
                 }
             }
@@ -280,7 +241,7 @@ public class ExcelExport<T> {
     * 不使用注解
     * @return com.jason.util.ExcelExport<T>
     */
-    public ExcelExport<T> outPutData(Collection<T> collection,String[] headRow)
+    public ExcelExport<T> outPutData(Collection<T> collection, String[] headRow)
             throws InvocationTargetException, IllegalAccessException {
         if(null != collection && !collection.isEmpty()){
             for(T t : collection){
@@ -297,7 +258,7 @@ public class ExcelExport<T> {
     * 不使用注解
     * @return com.jason.util.ExcelExport<T>
     */
-    public ExcelExport<T> outPutData(T t,String[] headRow) throws InvocationTargetException, IllegalAccessException {
+    public ExcelExport<T> outPutData(T t, String[] headRow) throws InvocationTargetException, IllegalAccessException {
         this.useAnnotation = false;
         if(!hasHeadRow || curRow == 0){
             this.createHeadRow(headRow);
@@ -322,17 +283,11 @@ public class ExcelExport<T> {
         Row row = this.createRow();
         int curCellNum = 0;
         String[] newHead = null;
-        if(useAnnotation){
-            newHead = new String[this.sortMapping.size()];
-        }
         //循环体外获得长度以提升效率
         int length = headRow.length;
         for(int i = 0 ; i < length ; i++){
             String head = headRow[i];
             if(head != null){
-                if(null != newHead){
-                    newHead[curCellNum] = head;
-                }
                 Cell cell = row.createCell(curCellNum++);
                 cell.setCellValue(head);
                 cell.setCellStyle(styles.get(ExcelConfig.Style.HEAD_ROW));
@@ -340,11 +295,7 @@ public class ExcelExport<T> {
                 //this.sheet.setColumnWidth((short)i,head.getBytes().length * 2 * 256);
             }
         }
-        if(null != newHead){
-            this.headRow = newHead;
-        }else{
-            this.headRow = headRow;
-        }
+        this.headRow = headRow;
         hasHeadRow = true;
     }
 
@@ -489,7 +440,6 @@ public class ExcelExport<T> {
             this.template = new ArrayList<>();
         }
         this.template.add(template);
-        this.useTemplate = true;
         return this;
     }
 

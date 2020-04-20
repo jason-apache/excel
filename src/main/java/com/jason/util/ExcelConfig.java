@@ -1,5 +1,6 @@
 package com.jason.util;
 
+import java.util.Date;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -85,5 +86,19 @@ public class ExcelConfig {
             map.put(values[i].getTitle(),values[i].getCode());
         }
         return map;
+    }
+
+    //默认值
+    public static class DefaultValue{
+        public static String defaultString = null;
+        public static Integer defaultInteger = -1;
+        public static Long defaultLong = -1L;
+        public static Short defaultShort = -1;
+        public static Byte defaultByte = -1;
+        public static Character defaultChar = null;
+        public static Float defaultFloat = -1.1F;
+        public static Double defaultDouble = -1.1D;
+        public static Boolean defaultBoolean = null;
+        public static Date defaultDate = null;
     }
 }
