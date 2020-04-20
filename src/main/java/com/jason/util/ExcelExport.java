@@ -76,14 +76,14 @@ public class ExcelExport<T> {
         Arrays.sort(fields, Comparator.comparingInt(o -> o.getAnnotation(ExcelField.class) == null ? -1 : o.getAnnotation(ExcelField.class).sort()));
         for(int i = 0; i < fields.length; i++){
             ExcelField excelField = fields[i].getAnnotation(ExcelField.class);
-            if(null != excelField && StringUtil.isNotBlank(excelField.excelTile()) && !excelField.isImport()){
-                filedMapping.put(excelField.excelTile(),fields[i]);
-                sortMapping.put(excelField.excelTile(),excelField.sort());
+            if(null != excelField && StringUtil.isNotBlank(excelField.title()) && !excelField.isImport()){
+                filedMapping.put(excelField.title(),fields[i]);
+                sortMapping.put(excelField.title(),excelField.sort());
                 if(excelField.sort() > max){
                     max = excelField.sort();
                 }
                 if(excelField.useTemplate()){
-                    templateColumn.put(excelField.excelTile(),excelField.templatePosition());
+                    templateColumn.put(excelField.title(),excelField.templatePosition());
                 }
             }
         }
@@ -93,14 +93,14 @@ public class ExcelExport<T> {
         Arrays.sort(methods, Comparator.comparingInt(o -> o.getAnnotation(ExcelField.class) == null ? -1 : o.getAnnotation(ExcelField.class).sort()));
         for(int i = 0 ; i < methods.length; i++){
             ExcelField excelField = methods[i].getAnnotation(ExcelField.class);
-            if(null != excelField && StringUtil.isNotBlank(excelField.excelTile()) && !excelField.isImport()){
-                methodMapping.put(excelField.excelTile(),methods[i]);
-                sortMapping.put(excelField.excelTile(),excelField.sort());
+            if(null != excelField && StringUtil.isNotBlank(excelField.title()) && !excelField.isImport()){
+                methodMapping.put(excelField.title(),methods[i]);
+                sortMapping.put(excelField.title(),excelField.sort());
                 if(excelField.sort() > max){
                     max = excelField.sort();
                 }
                 if(excelField.useTemplate()){
-                    templateColumn.put(excelField.excelTile(),excelField.templatePosition());
+                    templateColumn.put(excelField.title(),excelField.templatePosition());
                 }
             }
         }
@@ -439,7 +439,7 @@ public class ExcelExport<T> {
     /**
      * @author Jason
      * @date 2020/3/30 13:17
-     * @params [cell, field, t]
+     * @params [cell, field]
      * 设值至单元格
      * @return void
      */

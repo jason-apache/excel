@@ -13,36 +13,36 @@ import java.util.Date;
  */
 public class ExportUseAnno extends DataEntity<ExportUseAnno> {
 
-    @ExcelField(excelTile = "Integer",isImport = false,sort = 100000000)
+    @ExcelField(title = "Integer",isImport = false,sort = 100000000)
     private Integer aInteger;
 
-    @ExcelField(excelTile = "Long",isImport = false,sort = 1)
+    @ExcelField(title = "Long",isImport = false,sort = 1)
     private Long aLong;
 
-    @ExcelField(excelTile = "Short",isImport = false,sort = 2)
+    @ExcelField(title = "Short",isImport = false,sort = 2)
     private Short aShort;
 
-    @ExcelField(excelTile = "Byte",isImport = false,sort = 3,useTemplate = true,templatePosition = 1)
+    @ExcelField(title = "Byte",isImport = false,sort = 3,useTemplate = true,templatePosition = 1)
     private Byte aByte;
 
-    @ExcelField(excelTile = "Double",isImport = false,sort = 4)
+    @ExcelField(title = "Double",isImport = false,sort = 4)
     private Double aDouble;
 
-    @ExcelField(excelTile = "Float",isImport = false,sort = 5)
+    @ExcelField(title = "Float",isImport = false,sort = 5)
     private Float aFloat;
 
-    @ExcelField(excelTile = "aBoolean",isImport = false,sort = 6)
+    @ExcelField(title = "aBoolean",isImport = false,sort = 6)
     private Boolean aBoolean;
 
-    @ExcelField(excelTile = "Char",isImport = false,sort = 7)
+    @ExcelField(title = "Char",isImport = false,sort = 7)
     private Character aCharacter;
 
     private ExportUseAnno parent;
 
-    @ExcelField(excelTile = "字典数据",isImport = false,sort = 9,useTemplate = true)
+    @ExcelField(title = "字典数据",isImport = false,sort = 9,useTemplate = true)
     private String template;
 
-    @ExcelField(excelTile = "date",isImport = false,sort = 10)
+    @ExcelField(title = "date",isImport = false,sort = 10)
     private Date date;
 
     public Integer getaInteger() {
@@ -117,7 +117,7 @@ public class ExportUseAnno extends DataEntity<ExportUseAnno> {
         return this;
     }
 
-    @ExcelField(excelTile = "parent",isImport = false,sort = 8)
+    @ExcelField(title = "parent",isImport = false,sort = 8)
     public String getParent() {
         return parent.template;
     }

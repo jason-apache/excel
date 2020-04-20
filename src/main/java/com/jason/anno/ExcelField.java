@@ -40,9 +40,6 @@ public @interface ExcelField {
     //导出排序
     int sort() default -1;
 
-    //导出title
-    String excelTile() default "";
-
     //是否使用模板
     boolean useTemplate() default false;
 
