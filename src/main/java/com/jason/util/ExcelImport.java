@@ -189,7 +189,12 @@ public class ExcelImport<T> {
                 if(excelField.position() != -1){
                     cell = row.getCell(excelField.position());
                 }else {
-                    cell = row.getCell(titleMapping.get(excelField.title()));
+                    Integer index = titleMapping.get(excelField.title());
+                    if(null != index){
+                        cell = row.getCell(titleMapping.get(excelField.title()));
+                    }else {
+                        continue;
+                    }
                 }
                 //方法上的注解
                 if(o instanceof Method){
