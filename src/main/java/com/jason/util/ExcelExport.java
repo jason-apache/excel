@@ -156,13 +156,20 @@ public class ExcelExport<T> {
     * @params [collection]
     * @return com.jason.util.ExcelExport<T>
     */
-    public ExcelExport<T> outPutData(Collection<T> collection) throws IllegalAccessException, InvocationTargetException {
+    public String outPutData(Collection<T> collection){
+        StringBuilder errorMsg = new StringBuilder();
         if(null != collection && !collection.isEmpty()){
+            int currentElement = 0;
             for(T t : collection){
-                this.outPutData(t);
+                try {
+                    this.outPutData(t);
+                    currentElement++;
+                }catch (Exception e){
+                    errorMsg.append("错误信息：第").append(currentElement).append("行，").append(e.getMessage()).append("\r\n");
+                }
             }
         }
-        return this;
+        return errorMsg.toString();
     }
 
     /**
@@ -238,17 +245,23 @@ public class ExcelExport<T> {
     * @author Jason
     * @date 2020/3/31 11:50
     * @params [collection, headRow]
-    * 不使用注解
-    * @return com.jason.util.ExcelExport<T>
+    * 不使用注解 返回错误信息
+    * @return String
     */
-    public ExcelExport<T> outPutData(Collection<T> collection, String[] headRow)
-            throws InvocationTargetException, IllegalAccessException {
+    public String outPutData(Collection<T> collection, String[] headRow){
+        StringBuilder errorMsg = new StringBuilder();
         if(null != collection && !collection.isEmpty()){
+            int currentElement = 0;
             for(T t : collection){
-                this.outPutData(t,headRow);
+                try {
+                    this.outPutData(t,headRow);
+                    currentElement++;
+                }catch (Exception e){
+                    errorMsg.append("错误信息：第").append(currentElement).append("行，").append(e.getMessage()).append("\r\n");
+                }
             }
         }
-        return this;
+        return errorMsg.toString();
     }
 
     /**

@@ -98,9 +98,9 @@ public class Demo {
         Map<String, String> template = new HashMap<>();
         template.put("0","第二个map");
         export.addTemplate(template);
-        export.outPutData(useAnnoList);
+        String errorMsg = export.outPutData(useAnnoList);
         export.writeToFile("C:/Users/mh262/Desktop/exportUseAnno.xlsx");
-
+        System.out.println(errorMsg);
 
         /*
         ExcelExport<ExcelUseAnno> export = new ExcelExport<>(ExcelUseAnno.class);
@@ -129,8 +129,9 @@ public class Demo {
         ExcelExport<ExportNoUseAnno> export = new ExcelExport<>(ExportNoUseAnno.class);
         export.addTemplate(ExcelConfig.getTemplateTitle());
         //不使用注解时，需传入标题行
-        export.outPutData(noUseAnnoList,headRow);
-        export.writeToFile("C:/Users/user/Desktop/exportNoUseAnno.xlsx");
+        String errorMsg = export.outPutData(noUseAnnoList, headRow);
+        export.writeToFile("C:/Users/mh262/Desktop/exportNoUseAnno.xlsx");
+        System.out.println(errorMsg);
 
 
         /*
