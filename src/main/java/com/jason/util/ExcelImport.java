@@ -78,23 +78,21 @@ public class ExcelImport<T> {
         Field[] fields = clazz.getDeclaredFields();
         Method[] methods = clazz.getDeclaredMethods();
         //自动根据字段名映射
-        for(int i = 0; i< methods.length; i ++ ){
-            Method method = methods[i];
+        for (Method method : methods) {
             ExcelField excelField = method.getAnnotation(ExcelField.class);
-            if(null != excelField && excelField.isImport() && StringUtil.isNotBlank(excelField.title())){
+            if (null != excelField && excelField.isImport() && StringUtil.isNotBlank(excelField.title())) {
                 annotationList.add(excelField);
-                annotationMapping.put(excelField,method);
+                annotationMapping.put(excelField, method);
             }
         }
-        for(int i = 0 ; i < fields.length ; i ++ ){
-            Field field = fields[i];
+        for (Field field : fields) {
             ExcelField excelField = field.getAnnotation(ExcelField.class);
-            if(null != excelField && excelField.isImport() && StringUtil.isNotBlank(excelField.title())){
+            if (null != excelField && excelField.isImport() && StringUtil.isNotBlank(excelField.title())) {
                 annotationList.add(excelField);
-                annotationMapping.put(excelField,field);
-            }else {
-                if(autoMappingByFieldName){
-                    if(null == fieldsSet){
+                annotationMapping.put(excelField, field);
+            } else {
+                if (autoMappingByFieldName) {
+                    if (null == fieldsSet) {
                         fieldsSet = new HashSet<>();
                     }
                     fieldsSet.add(field);
@@ -178,56 +176,54 @@ public class ExcelImport<T> {
             this.init();
         }
         T t = (T) clazz.newInstance();
-        int size = annotationList.size();
         //根据参数位置映射，开始解析excel
-        for(int i = 0 ; i < size ; i ++ ){
-            ExcelField excelField = annotationList.get(i);
-            if(null != excelField){
+        for (ExcelField excelField : annotationList) {
+            if (null != excelField) {
                 Object o = annotationMapping.get(excelField);
                 Cell cell = null;
                 //如果使用了position属性
-                if(excelField.position() != -1){
+                if (excelField.position() != -1) {
                     cell = row.getCell(excelField.position());
-                }else {
+                } else {
                     Integer index = titleMapping.get(excelField.title());
-                    if(null != index){
+                    if (null != index) {
                         cell = row.getCell(titleMapping.get(excelField.title()));
-                    }else {
+                    } else {
                         continue;
                     }
                 }
                 //方法上的注解
-                if(o instanceof Method){
+                if (o instanceof Method) {
                     //使用了目标方法
-                    if(StringUtil.isNotBlank(excelField.targetMethod())){
+                    if (StringUtil.isNotBlank(excelField.targetMethod())) {
                         Object target = ((Method) o).getParameterTypes()[0].newInstance();
                         Method targetMethod = target.getClass().getMethod(excelField.targetMethod(), excelField.targetClass());
                         //使用模板
-                        if(useTemplate && excelField.useTemplate()){
+                        if (useTemplate && excelField.useTemplate()) {
                             String val = template.get(cell.toString());
-                            targetMethod.invoke(target,val);
-                        }else{
-                            this.invoke(targetMethod,cell,target);
+                            targetMethod.invoke(target, val);
+                        } else {
+                            this.invoke(targetMethod, cell, target);
                         }
                         //set到实体中
-                        ((Method) o).invoke(t,target);
-                    }else {
+                        ((Method) o).invoke(t, target);
+                    } else {
                         //使用模板
-                        if(useTemplate && excelField.useTemplate()){
+                        if (useTemplate && excelField.useTemplate()) {
                             String val = template.get(cell.toString());
-                            ((Method) o).invoke(t,val);
-                        }else{
-                            this.invoke(((Method) o),cell,t);
+                            ((Method) o).invoke(t, val);
+                        } else {
+                            this.invoke(((Method) o), cell, t);
                         }
                     }
                     //字段上的注解
-                }else if(o instanceof Field){
+                } else if (o instanceof Field) {
                     ((Field) o).setAccessible(true);
-                    if(useTemplate && excelField.useTemplate()){
+                    if (useTemplate && excelField.useTemplate()) {
                         String val = template.get(cell.toString());
-                        ((Field) o).set(t,val);
-                    }else{
-                        this.setValue(((Field) o),cell,t);
+                        ((Field) o).set(t, val);
+                    } else {
+                        this.setValue(((Field) o), cell, t);
                     }
                 }
             }

@@ -70,21 +70,21 @@ public class ExcelExport<T> {
         Field[] fields = this.clazz.getDeclaredFields();
         this.fields = fields;
         //排序
-        for(int i = 0; i < fields.length; i++){
-            ExcelField excelField = fields[i].getAnnotation(ExcelField.class);
-            if(null != excelField && !excelField.isImport() && StringUtil.isNotBlank(excelField.title())){
+        for (Field field : fields) {
+            ExcelField excelField = field.getAnnotation(ExcelField.class);
+            if (null != excelField && !excelField.isImport() && StringUtil.isNotBlank(excelField.title())) {
                 annotationList.add(excelField);
-                annotationMapping.put(excelField,fields[i]);
+                annotationMapping.put(excelField, field);
             }
         }
         //获取Class方法
         Method[] methods = this.clazz.getMethods();
         //排序
-        for(int i = 0 ; i < methods.length; i++){
-            ExcelField excelField = methods[i].getAnnotation(ExcelField.class);
-            if(null != excelField && !excelField.isImport() && StringUtil.isNotBlank(excelField.title())){
+        for (Method method : methods) {
+            ExcelField excelField = method.getAnnotation(ExcelField.class);
+            if (null != excelField && !excelField.isImport() && StringUtil.isNotBlank(excelField.title())) {
                 annotationList.add(excelField);
-                annotationMapping.put(excelField,methods[i]);
+                annotationMapping.put(excelField, method);
             }
         }
         //排序
@@ -186,7 +186,6 @@ public class ExcelExport<T> {
             this.createHeadRow(this.headRow);
         }
 
-        int size = annotationList.size();
         int curCellNum = 0;
 
         Row row = this.createRow();
@@ -194,32 +193,31 @@ public class ExcelExport<T> {
         //是否使用注解
         if(useAnnotation){
             //开始创建数据
-            for(int i = 0 ; i < size; i++){
-                ExcelField excelField = annotationList.get(i);
+            for (ExcelField excelField : annotationList) {
                 Object o = annotationMapping.get(excelField);
-                if(o instanceof Method){
-                    if(excelField.useTemplate()){
+                if (o instanceof Method) {
+                    if (excelField.useTemplate()) {
                         String val = template.get(excelField.templatePosition()).get(((Method) o).invoke(t).toString());
                         Cell cell = this.createCell(row, curCellNum++);
                         cell.setCellStyle(styles.get(styleKey));
                         cell.setCellValue(val);
-                    }else{
-                        Object object = ((Method)o).invoke(t);
+                    } else {
+                        Object object = ((Method) o).invoke(t);
                         Cell cell = this.createCell(row, curCellNum++);
                         cell.setCellStyle(styles.get(styleKey));
-                        this.setValue(cell,object);
+                        this.setValue(cell, object);
                     }
-                }else if(o instanceof Field){
+                } else if (o instanceof Field) {
                     ((Field) o).setAccessible(true);
-                    if(excelField.useTemplate()){
+                    if (excelField.useTemplate()) {
                         String val = template.get(excelField.templatePosition()).get(((Field) o).get(t).toString());
                         Cell cell = this.createCell(row, curCellNum++);
                         cell.setCellStyle(styles.get(styleKey));
                         cell.setCellValue(val);
-                    }else{
+                    } else {
                         Cell cell = this.createCell(row, curCellNum++);
                         cell.setCellStyle(styles.get(styleKey));
-                        this.setValue(cell,((Field) o),t);
+                        this.setValue(cell, ((Field) o), t);
                     }
                 }
             }
@@ -295,12 +293,8 @@ public class ExcelExport<T> {
         }
         Row row = this.createRow();
         int curCellNum = 0;
-        String[] newHead = null;
-        //循环体外获得长度以提升效率
-        int length = headRow.length;
-        for(int i = 0 ; i < length ; i++){
-            String head = headRow[i];
-            if(head != null){
+        for (String head : headRow) {
+            if (head != null) {
                 Cell cell = row.createCell(curCellNum++);
                 cell.setCellValue(head);
                 cell.setCellStyle(styles.get(ExcelConfig.Style.HEAD_ROW));
