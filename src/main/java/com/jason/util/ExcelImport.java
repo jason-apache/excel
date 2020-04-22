@@ -74,33 +74,13 @@ public class ExcelImport<T> {
         this.initMethods();
     }
 
-    private void initMethods(){
-        Field[] fields = clazz.getDeclaredFields();
-        Method[] methods = clazz.getDeclaredMethods();
-        //自动根据字段名映射
-        for (Method method : methods) {
-            ExcelField excelField = method.getAnnotation(ExcelField.class);
-            if (null != excelField && excelField.isImport() && StringUtil.isNotBlank(excelField.title())) {
-                annotationList.add(excelField);
-                annotationMapping.put(excelField, method);
-            }
-        }
-        for (Field field : fields) {
-            ExcelField excelField = field.getAnnotation(ExcelField.class);
-            if (null != excelField && excelField.isImport() && StringUtil.isNotBlank(excelField.title())) {
-                annotationList.add(excelField);
-                annotationMapping.put(excelField, field);
-            } else {
-                if (autoMappingByFieldName) {
-                    if (null == fieldsSet) {
-                        fieldsSet = new HashSet<>();
-                    }
-                    fieldsSet.add(field);
-                }
-            }
-        }
-    }
-
+    /**
+    * @author Jason
+    * @date 2020/4/22 10:18
+    * @params []
+    * 初始化工作薄
+    * @return void
+    */
     private void init() throws IOException {
 
         try {
@@ -132,6 +112,40 @@ public class ExcelImport<T> {
             titleMapping.put(data,i);
         }
         this.initialized = true;
+    }
+
+    /**
+    * @author Jason
+    * @date 2020/4/22 10:19
+    * @params []
+    * 初始化方法
+    * @return void
+    */
+    private void initMethods(){
+        Field[] fields = clazz.getDeclaredFields();
+        Method[] methods = clazz.getDeclaredMethods();
+        //自动根据字段名映射
+        for (Method method : methods) {
+            ExcelField excelField = method.getAnnotation(ExcelField.class);
+            if (null != excelField && excelField.isImport() && StringUtil.isNotBlank(excelField.title())) {
+                annotationList.add(excelField);
+                annotationMapping.put(excelField, method);
+            }
+        }
+        for (Field field : fields) {
+            ExcelField excelField = field.getAnnotation(ExcelField.class);
+            if (null != excelField && excelField.isImport() && StringUtil.isNotBlank(excelField.title())) {
+                annotationList.add(excelField);
+                annotationMapping.put(excelField, field);
+            } else {
+                if (autoMappingByFieldName) {
+                    if (null == fieldsSet) {
+                        fieldsSet = new HashSet<>();
+                    }
+                    fieldsSet.add(field);
+                }
+            }
+        }
     }
 
     /**
