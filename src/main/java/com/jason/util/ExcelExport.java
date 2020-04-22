@@ -24,32 +24,53 @@ import java.util.*;
 public class ExcelExport<T> {
 
     private Class<T> clazz;
-
-    //工作簿对象
+    /**
+     * 工作簿对象
+     */
     private SXSSFWorkbook sxssfWorkbook;
-    //工作簿对象
+    /**
+     *工作簿对象
+     */
     private SXSSFSheet sheet;
-
-    //首行标题
+    /**
+     *首行标题
+     */
     private String[] headRow;
-    //是否已创建标题行
+    /**
+     *是否已创建标题行
+     */
     private boolean hasHeadRow;
-    //是否使用excel注解
+    /**
+     *是否使用excel注解
+     */
     private boolean useAnnotation = true;
-    //当前行
+    /**
+     *当前行
+     */
     private int curRow = 0;
-
-    //注解
+    /**
+     *注解
+     */
     private final List<ExcelField> annotationList = new ArrayList<>();
-    //注解映射关系
+    /**
+     *注解映射关系
+     */
     private final Map<ExcelField,Object> annotationMapping = new HashMap<>();
-    //不使用注解，默认以字段顺序
+    /**
+     *不使用注解，默认以字段顺序
+     */
     private Field[] fields;
-    //模板格式
+    /**
+     *模板格式
+     */
     private List<Map<String,String>> template;
-    //样式
+    /**
+     *样式
+     */
     private Map<String, CellStyle> styles;
-    //样式key
+    /**
+     *样式key
+     */
     private String styleKey = ExcelConfig.Style.DEFAULT_STYLE;
 
     public ExcelExport(Class<T> clazz){

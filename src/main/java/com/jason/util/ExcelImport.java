@@ -26,39 +26,63 @@ import java.util.*;
  * @Description
  */
 public class ExcelImport<T> {
-
-    //解析起始行
+    /**
+     * 解析起始行
+     */
     private int startRow;
-    //解析工作簿
+    /**
+     * 解析工作簿
+     */
     private int startSheet;
-    //工作簿名称
+    /**
+     *工作簿名称
+     */
     private String sheetName;
-    //实体类型
+    /**
+     *实体类型
+     */
     private final Class<T> clazz;
-    //输入流
+    /**
+     *输入流
+     */
     private final InputStream is;
-    //字节数组，保存流
+    /**
+     *字节数组，保存流
+     */
     private byte[] bytes;
 
     private Sheet sheet;
-    //是否初始化
+    /**
+     *是否初始化
+     */
     private boolean initialized;
-    //是否使用模板转换
+    /**
+     *是否使用模板转换
+     */
     private boolean useTemplate;
-    //自动根据字段名称映射
+    /**
+     *自动根据字段名称映射
+     */
     private boolean autoMappingByFieldName = true;
-
-    //注解
+    /**
+     *注解
+     */
     private final List<ExcelField> annotationList = new ArrayList<>();
-    //注解映射关系
+    /**
+     *注解映射关系
+     */
     private final Map<ExcelField,Object> annotationMapping = new HashMap<>();
-    //title映射关系
+    /**
+     *title映射关系
+     */
     private final Map<String,Integer> titleMapping = new HashMap<>();
-
-    //不声明方法式设值时，默认以字段名映射excel
+    /**
+     *不声明方法式设值时，默认以字段名映射excel
+     */
     private Set<Field> fieldsSet;
-
-    //模板格式
+    /**
+     *模板格式
+     */
     private Map<String,String> template;
 
     public ExcelImport(InputStream is,Class<T> clazz){
