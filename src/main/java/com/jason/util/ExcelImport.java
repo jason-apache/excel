@@ -57,25 +57,21 @@ public class ExcelImport<T> {
      */
     private boolean initialized;
     /**
-     *是否使用模板转换
-     */
-    private boolean useTemplate;
-    /**
      *自动根据字段名称映射
      */
     private boolean autoMappingByFieldName = true;
     /**
      *注解
      */
-    private final List<ExcelField> annotationList = new ArrayList<>();
+    private List<ExcelField> annotationList;
     /**
-     *注解映射关系
+     *注解映射关系 ExcelField -> field or method
      */
-    private final Map<ExcelField,Object> annotationMapping = new HashMap<>();
+    private Map<ExcelField,Object> annotationMapping;
     /**
      *title映射关系
      */
-    private final Map<String,Integer> titleMapping = new HashMap<>();
+    private Map<String,Integer> titleMapping;
     /**
      *不声明方法式设值时，默认以字段名映射excel
      */
@@ -83,7 +79,7 @@ public class ExcelImport<T> {
     /**
      *模板格式
      */
-    private Map<String,String> template;
+    private Map<String,Map<String,String>> template;
 
     public ExcelImport(InputStream is,Class<T> clazz){
         ExcelField field = clazz.getAnnotation(ExcelField.class);
@@ -99,14 +95,13 @@ public class ExcelImport<T> {
     }
 
     /**
-    * @author Jason
-    * @date 2020/4/22 10:18
-    * @params []
-    * 初始化工作薄
-    * @return void
-    */
+     * @author Jason
+     * @date 2020/4/22 10:18
+     * @params []
+     * 初始化工作薄
+     * @return void
+     */
     private void init() throws IOException {
-
         try {
             bytes = new byte[is.available()];
             is.read(bytes);
@@ -130,6 +125,7 @@ public class ExcelImport<T> {
 
         //取excel首行列名
         Row firstRow = sheet.getRow(startRow);
+        titleMapping = new HashMap<>(sheet.getLastRowNum());
         //取出excel列的位置index，放入title映射
         for(int i=0;i<firstRow.getLastCellNum();i++){
             String data = firstRow.getCell(i) == null ? "" : firstRow.getCell(i).toString();
@@ -139,15 +135,18 @@ public class ExcelImport<T> {
     }
 
     /**
-    * @author Jason
-    * @date 2020/4/22 10:19
-    * @params []
-    * 初始化方法
-    * @return void
-    */
+     * @author Jason
+     * @date 2020/4/22 10:19
+     * @params []
+     * 初始化方法
+     * @return void
+     */
     private void initMethods(){
+
         Field[] fields = clazz.getDeclaredFields();
         Method[] methods = clazz.getDeclaredMethods();
+        annotationList = new ArrayList<>(fields.length + methods.length);
+        annotationMapping = new HashMap<>(fields.length + methods.length);
         //自动根据字段名映射
         for (Method method : methods) {
             ExcelField excelField = method.getAnnotation(ExcelField.class);
@@ -199,12 +198,12 @@ public class ExcelImport<T> {
     }
 
     /**
-    * @author Jason
-    * @date 2020/3/30 17:18
-    * @params [row]
-    * 解析excel
-    * @return T
-    */
+     * @author Jason
+     * @date 2020/3/30 17:18
+     * @params [row]
+     * 解析excel
+     * @return T
+     */
     public T getObject(Row row) throws IllegalAccessException, InstantiationException,
             NoSuchMethodException, InvocationTargetException, IOException, ParseException {
         if(null == row || row.getLastCellNum() == 0){
@@ -213,7 +212,7 @@ public class ExcelImport<T> {
         if(!this.initialized){
             this.init();
         }
-        T t = (T) clazz.newInstance();
+        T t = clazz.newInstance();
         //根据参数位置映射，开始解析excel
         for (ExcelField excelField : annotationList) {
             if (null != excelField) {
@@ -230,40 +229,8 @@ public class ExcelImport<T> {
                         continue;
                     }
                 }
-                //方法上的注解
-                if (o instanceof Method) {
-                    //使用了目标方法
-                    if (StringUtil.isNotBlank(excelField.targetMethod())) {
-                        Object target = ((Method) o).getParameterTypes()[0].newInstance();
-                        Method targetMethod = target.getClass().getMethod(excelField.targetMethod(), excelField.targetClass());
-                        //使用模板
-                        if (useTemplate && excelField.useTemplate()) {
-                            String val = template.get(cell.toString());
-                            targetMethod.invoke(target, val);
-                        } else {
-                            this.invoke(targetMethod, cell, target);
-                        }
-                        //set到实体中
-                        ((Method) o).invoke(t, target);
-                    } else {
-                        //使用模板
-                        if (useTemplate && excelField.useTemplate()) {
-                            String val = template.get(cell.toString());
-                            ((Method) o).invoke(t, val);
-                        } else {
-                            this.invoke(((Method) o), cell, t);
-                        }
-                    }
-                    //字段上的注解
-                } else if (o instanceof Field) {
-                    ((Field) o).setAccessible(true);
-                    if (useTemplate && excelField.useTemplate()) {
-                        String val = template.get(cell.toString());
-                        ((Field) o).set(t, val);
-                    } else {
-                        this.setValue(((Field) o), cell, t);
-                    }
-                }
+
+                this.setValue(o,excelField,cell,t);
             }
         }
         //是否自动根据参数名映射 默认开启
@@ -282,14 +249,81 @@ public class ExcelImport<T> {
         return t;
     }
 
+    /**
+     * @author Jason
+     * @date 2020/4/23 14:17
+     * @params [o, excelField, cell, t]
+     * @return void
+     * 设值，过滤模板格式
+     */
+    private void setValue(Object o,ExcelField excelField, Cell cell, T t)
+            throws IllegalAccessException, ParseException, InvocationTargetException, NoSuchMethodException, InstantiationException {
+        Object val = null;
+        if(excelField.useTemplate()){
+            Map<String, String> map = template.get(excelField.templateNameKey());
+            if(null != map){
+                val = map.get(cell.toString());
+            }
+        }
+
+        if(o instanceof Method){
+            this.setValue((Method) o,excelField,cell,val,t);
+        }else if(o instanceof Field){
+            this.setValue((Field) o,excelField,cell,val,t);
+        }
+    }
 
     /**
-    * @author Jason
-    * @date 2020/4/20 14:32
-    * @params [method, cell, instance]
-    * 根据不同参数类型执行方法
-    * @return void
-    */
+     * @author Jason
+     * @date 2020/4/23 14:17
+     * @params [field, excelField, cell, val, t]
+     * @return void
+     * 设值
+     */
+    private void setValue(Field field,ExcelField excelField,Cell cell,Object val,T t) throws ParseException, IllegalAccessException {
+        field.setAccessible(true);
+        if(excelField.useTemplate()){
+            field.set(t,val);
+        }else {
+            this.setValue(field,cell,t);
+        }
+    }
+
+    /**
+     * @author Jason
+     * @date 2020/4/23 14:18
+     * @params [method, excelField, cell, val, t]
+     * @return void
+     * 设值
+     */
+    private void setValue(Method method,ExcelField excelField,Cell cell,Object val,T t)
+            throws InvocationTargetException, IllegalAccessException, ParseException, NoSuchMethodException, InstantiationException {
+        if(StringUtil.isNotBlank(excelField.targetMethod())){
+            Object target = method.getParameterTypes()[0].newInstance();
+            Method targetMethod = target.getClass().getMethod(excelField.targetMethod(), excelField.targetClass());
+            if(excelField.useTemplate()){
+                targetMethod.invoke(target,val);
+            }else{
+                this.invoke(targetMethod,cell,target);
+            }
+
+            method.invoke(t,target);
+        }else {
+            if(excelField.useTemplate()){
+                method.invoke(t,val);
+            }else {
+                this.invoke(method,cell,t);
+            }
+        }
+    }
+
+    /**
+     * @author Jason
+     * @date 2020/4/20 14:32
+     * @params [method, cell, instance]
+     * 根据不同参数类型执行方法
+     * @return void
+     */
     private void invoke(Method method,Cell cell,Object instance)
             throws InvocationTargetException, IllegalAccessException, ParseException {
 
@@ -340,12 +374,12 @@ public class ExcelImport<T> {
     }
 
     /**
-    * @author Jason
-    * @date 2020/4/20 14:32
-    * @params [field, cell, instance]
-    * 根据不同参数类型给字段设置
-    * @return void
-    */
+     * @author Jason
+     * @date 2020/4/20 14:32
+     * @params [field, cell, instance]
+     * 根据不同参数类型给字段设置
+     * @return void
+     */
     private void setValue(Field field,Cell cell,Object instance) throws IllegalAccessException, ParseException {
         if(cell == null || cell.toString().length() == 0){
             return;
@@ -408,37 +442,39 @@ public class ExcelImport<T> {
     }
 
     /**
-    * @author Jason
-    * @date 2020/3/31 13:50
-    * @params [template]
-    * 配置模板
-    * @return com.jason.util.ExcelImport<T>
-    */
-    public ExcelImport<T> setTemplate(Map<String, String> template) {
-        this.template = template;
-        this.useTemplate = true;
+     * @author Jason
+     * @date 2020/3/31 13:50
+     * @params [template]
+     * 配置模板
+     * @return com.jason.util.ExcelImport<T>
+     */
+    public ExcelImport<T> putTemplate(String key, Map<String, String> template) {
+        if(null == this.template){
+            this.template = new HashMap<>(10);
+        }
+        this.template.put(key,template);
         return this;
     }
 
     /**
-    * @author Jason
-    * @date 2020/4/1 9:46
-    * @params [autoMappingByFieldName]
-    * @return com.jason.util.ExcelImport<T>
-    * 自动根据字段名映射，默认开启
-    */
+     * @author Jason
+     * @date 2020/4/1 9:46
+     * @params [autoMappingByFieldName]
+     * @return com.jason.util.ExcelImport<T>
+     * 自动根据字段名映射，默认开启
+     */
     public ExcelImport<T> setAutoMappingByFieldName(boolean autoMappingByFieldName) {
         this.autoMappingByFieldName = autoMappingByFieldName;
         return this;
     }
 
     /**
-    * @author Jason
-    * @date 2020/4/1 9:47
-    * @params []
-    * 获取工作簿对象
-    * @return org.apache.poi.ss.usermodel.Sheet
-    */
+     * @author Jason
+     * @date 2020/4/1 9:47
+     * @params []
+     * 获取工作簿对象
+     * @return org.apache.poi.ss.usermodel.Sheet
+     */
     public Sheet getSheet() throws IOException {
         if(initialized || sheet == null){
             this.init();

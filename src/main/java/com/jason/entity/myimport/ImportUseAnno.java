@@ -11,7 +11,7 @@ import java.util.Date;
  * 使用注解
  * @Description:
  */
-@ExcelField(startRow = 1, sheetIndex = 1)
+@ExcelField(startRow = 2, sheetIndex = 1)
 public class ImportUseAnno extends DataEntity<ImportUseAnno> {
 
     @ExcelField(title = "Integer")
@@ -120,7 +120,7 @@ public class ImportUseAnno extends DataEntity<ImportUseAnno> {
         return parent;
     }
 
-    @ExcelField(title = "parent",targetMethod = "setTemplate",targetClass = String.class)
+    @ExcelField(title = "parent",targetMethod = "setTemplate",targetClass = String.class,useTemplate = true,templateNameKey = "parent")
     public ImportUseAnno setParent(ImportUseAnno parent) {
         this.parent = parent;
         return this;

@@ -21,6 +21,10 @@ public class ExcelConfig {
      * 导出工作簿名称
      */
     public final static String SHEET_NAME = "Export";
+    /**
+     * 导出初始化工作簿大小
+     */
+    public final static int EXPORT_WORK_SIZE = 1000;
 
     /**
      * 样式key常量

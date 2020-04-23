@@ -27,9 +27,10 @@ import java.util.*;
  */
 public class Demo {
 
+    private static int size = 1000;
     private ClassesService classesService = new ClassesService();
-    private static List<ExportNoUseAnno> noUseAnnoList = new ArrayList<>();
-    private static List<ExportUseAnno> useAnnoList = new ArrayList<>();
+    private static List<ExportNoUseAnno> noUseAnnoList = new ArrayList<>(size);
+    private static List<ExportUseAnno> useAnnoList = new ArrayList<>(size);
     private static String[] headRow;
 
     //初始化测试数据
@@ -38,7 +39,7 @@ public class Demo {
         headRow = new String[]{
                 "Integer","Long","Short","Byte","Double","Float","aBoolean","Char","parent","字典数据","date"
         };
-        for(int i = 0,j=1000;i<1000;i++,j--){
+        for(int i = 0,j=size;i<size;i++,j--){
             ExportNoUseAnno noUseAnno = new ExportNoUseAnno();
             if(i%3 == 0){
                 noUseAnno.setaBoolean(true);
@@ -157,10 +158,11 @@ public class Demo {
     //使用注解导入
     //支持模板格式
     public void importUseAnno() throws NoSuchMethodException, ParseException, InstantiationException, IOException, IllegalAccessException, InvocationTargetException, NoSuchFieldException {
-        File file = new File("C:/Users/mh262/Desktop/4.科研设备信息表-电气试验室.xlsx");
+        File file = new File("C:/Users/mh262/Desktop/exportUseAnno.xlsx");
         ExcelImport<ImportUseAnno> excelImport = new ExcelImport<>(new FileInputStream(file), ImportUseAnno.class);
         //设置模板格式
-        excelImport.setTemplate(ExcelConfig.getTemplateCode());
+        excelImport.putTemplate("default",ExcelConfig.getTemplateCode());
+        excelImport.putTemplate("parent",ExcelConfig.getTemplateTitle());
         List<ImportUseAnno> list = new ArrayList<>();
         String errorMsg = excelImport.getObjects(list);
         System.out.println(list);

@@ -59,11 +59,11 @@ public class ExcelExport<T> {
     /**
      *注解
      */
-    private final List<ExcelField> annotationList = new ArrayList<>();
+    private List<ExcelField> annotationList;
     /**
      *注解映射关系
      */
-    private final Map<ExcelField,Object> annotationMapping = new HashMap<>();
+    private Map<ExcelField,Object> annotationMapping;
     /**
      *不使用注解，默认以字段顺序
      */
@@ -95,11 +95,13 @@ public class ExcelExport<T> {
      * @return com.jason.util.ExcelExport<T>
      */
     private void init(){
-        int max = 0;
         //获取Class字段
         Field[] fields = this.clazz.getDeclaredFields();
+        //获取Class方法
+        Method[] methods = this.clazz.getMethods();
         this.fields = fields;
-        //排序
+        annotationList = new ArrayList<>(fields.length + methods.length);
+        annotationMapping = new HashMap<>(fields.length + methods.length);
         for (Field field : fields) {
             ExcelField excelField = field.getAnnotation(ExcelField.class);
             if (null != excelField && !excelField.isImport() && StringUtil.isNotBlank(excelField.title())) {
@@ -107,9 +109,6 @@ public class ExcelExport<T> {
                 annotationMapping.put(excelField, field);
             }
         }
-        //获取Class方法
-        Method[] methods = this.clazz.getMethods();
-        //排序
         for (Method method : methods) {
             ExcelField excelField = method.getAnnotation(ExcelField.class);
             if (null != excelField && !excelField.isImport() && StringUtil.isNotBlank(excelField.title())) {
@@ -126,7 +125,7 @@ public class ExcelExport<T> {
             headRow[i] = annotationList.get(i).title();
         }
 
-        this.sxssfWorkbook = new SXSSFWorkbook();
+        this.sxssfWorkbook = new SXSSFWorkbook(ExcelConfig.EXPORT_WORK_SIZE);
         this.sheet = sxssfWorkbook.createSheet(ExcelConfig.SHEET_NAME);
     }
 
@@ -138,7 +137,7 @@ public class ExcelExport<T> {
     * @return void
     */
     public void defaultStyles(){
-        Map<String, CellStyle> styles = new HashMap<>();
+        Map<String, CellStyle> styles = new HashMap<>(3);
         CellStyle style = sxssfWorkbook.createCellStyle();
 
         //设置headRow样式
