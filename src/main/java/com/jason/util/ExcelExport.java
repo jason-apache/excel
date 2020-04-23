@@ -321,7 +321,6 @@ public class ExcelExport<T> {
                 if(null != field){
                     field.setAccessible(true);
                     Cell cell = this.createCell(row, curCellNum++);
-                    cell.setCellStyle(styles.get(styleKey));
                     this.setValue(cell,field,t);
                 }
             }
@@ -528,7 +527,7 @@ public class ExcelExport<T> {
             cell.setCellValue((Byte) object);
         }else if(object instanceof Float){
             //解决float精度问题
-            cell.setCellValue(Double.parseDouble(String.valueOf(object)));
+            cell.setCellValue(Double.parseDouble(object.toString()));
         }else if(object instanceof Boolean){
             if((Boolean) object){
                 cell.setCellValue(ExcelConfig.EXPORT_TRUE);

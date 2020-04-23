@@ -344,7 +344,7 @@ public class ExcelImport<T> {
                 method.invoke(instance, format);
             }else if(numberFlag){
                 method.invoke(instance,
-                        new Double(cell.getNumericCellValue()).intValue()+"");
+                        new Double(cell.getNumericCellValue()).intValue());
             }else{
                 method.invoke(instance, cell.toString());
             }
@@ -353,23 +353,25 @@ public class ExcelImport<T> {
             Date date = new SimpleDateFormat(ExcelConfig.DATE_IMPORT_FORMAT).parse(cell.toString());
             method.invoke(instance,date);
         }else if(type == Integer.class){
-            method.invoke(instance,new Double(cell.toString()).intValue());
+            method.invoke(instance,new Double(cell.getNumericCellValue()).intValue());
         }else if(type == Double.class){
-            method.invoke(instance,new Double(cell.toString()));
+            method.invoke(instance, cell.getNumericCellValue());
         }else if(type == Long.class){
-            method.invoke(instance,new Double(cell.toString()).longValue());
+            method.invoke(instance,new Double(cell.getNumericCellValue()).longValue());
         }else if(type == Float.class){
-            method.invoke(instance,new Double(cell.toString()).floatValue());
+            method.invoke(instance,new Double(cell.getNumericCellValue()).floatValue());
         }else if(type == Short.class){
-            method.invoke(instance,new Double(cell.toString()).shortValue());
+            method.invoke(instance,new Double(cell.getNumericCellValue()).shortValue());
         }else if(type == Byte.class){
-            method.invoke(instance,new Double(cell.toString()).byteValue());
+            method.invoke(instance,new Double(cell.getNumericCellValue()).byteValue());
         }else if(type == Boolean.class){
             if(ExcelConfig.IMPORT_TRUE.equals(cell.toString())){
                 method.invoke(instance,true);
             }else if(ExcelConfig.IMPORT_FALSE.equals(cell.toString())){
                 method.invoke(instance,false);
             }
+        }else if(type == Character.class){
+            method.invoke(instance,cell.getStringCellValue().toCharArray()[0]);
         }
     }
 
@@ -423,6 +425,8 @@ public class ExcelImport<T> {
             }else if(ExcelConfig.IMPORT_FALSE.equals(cell.toString())){
                 field.set(instance,false);
             }
+        }else if(field.getType() == Character.class){
+            field.set(instance,cell.getStringCellValue());
         }
     }
 
