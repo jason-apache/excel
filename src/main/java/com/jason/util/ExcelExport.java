@@ -211,6 +211,7 @@ public class ExcelExport<T> {
         if(styles == null){
             defaultStyles();
         }
+        //设置标题
         if(StringUtil.isNotBlank(this.title)){
             Row row = this.createRow();
             Cell cell = row.createCell(0);
@@ -504,6 +505,8 @@ public class ExcelExport<T> {
      * @return void
      */
     private void setValue(Cell cell,Object object){
+        //设置样式
+        cell.setCellStyle(styles.get(styleKey));
         if(object == null){
             cell.setCellValue("");
             return;
@@ -524,7 +527,8 @@ public class ExcelExport<T> {
         }else if(object instanceof Byte){
             cell.setCellValue((Byte) object);
         }else if(object instanceof Float){
-            cell.setCellValue((Float) object);
+            //解决float精度问题
+            cell.setCellValue(Double.parseDouble(String.valueOf(object)));
         }else if(object instanceof Boolean){
             if((Boolean) object){
                 cell.setCellValue(ExcelConfig.EXPORT_TRUE);

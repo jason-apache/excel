@@ -27,7 +27,7 @@ public class ExcelConfig {
     public final static int EXPORT_WORK_SIZE = 1000;
 
     /**
-     * 样式key常量
+     * 样式常量
      */
     public static class Style {
         /**
@@ -61,7 +61,7 @@ public class ExcelConfig {
         /**
          * 单元格默认最小宽度
          */
-        public final static int CELL_MIN_WIDTH = 3000;
+        public final static int CELL_MIN_WIDTH = 4000;
     }
 
     /**
