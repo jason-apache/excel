@@ -2,6 +2,7 @@ package com.jason.util;
 
 import com.jason.anno.ExcelField;
 import org.apache.poi.ss.usermodel.*;
+import org.apache.poi.ss.util.CellRangeAddress;
 import org.apache.poi.xssf.streaming.SXSSFSheet;
 import org.apache.poi.xssf.streaming.SXSSFWorkbook;
 
@@ -17,13 +18,16 @@ import java.text.SimpleDateFormat;
 import java.util.*;
 
 /**
- * @Auther: Jason
+ * @author Jason
  * @Date: 2019/12/25 15:42
  * @Description:
  */
 public class ExcelExport<T> {
 
-    private Class<T> clazz;
+    /**
+     * 反射对象
+     */
+    private final Class<T> clazz;
     /**
      * 工作簿对象
      */
@@ -33,7 +37,11 @@ public class ExcelExport<T> {
      */
     private SXSSFSheet sheet;
     /**
-     *首行标题
+     * 标题行
+     */
+    private String title;
+    /**
+     * 首行列明
      */
     private String[] headRow;
     /**
@@ -73,8 +81,9 @@ public class ExcelExport<T> {
      */
     private String styleKey = ExcelConfig.Style.DEFAULT_STYLE;
 
-    public ExcelExport(Class<T> clazz){
+    public ExcelExport(Class<T> clazz,String title){
         this.clazz = clazz;
+        this.title = title;
         init();
     }
 
@@ -132,25 +141,27 @@ public class ExcelExport<T> {
         Map<String, CellStyle> styles = new HashMap<>();
         CellStyle style = sxssfWorkbook.createCellStyle();
 
+        //设置headRow样式
         style.setAlignment(HorizontalAlignment.CENTER);
         style.setVerticalAlignment(VerticalAlignment.CENTER);
-        Font titleFont = sxssfWorkbook.createFont();
         style.setBorderRight(BorderStyle.THIN);
         style.setRightBorderColor(IndexedColors.GREY_50_PERCENT.getIndex());
         style.setBorderLeft(BorderStyle.THIN);
         style.setLeftBorderColor(IndexedColors.GREY_50_PERCENT.getIndex());
         style.setBorderTop(BorderStyle.THIN);
         style.setTopBorderColor(IndexedColors.GREY_50_PERCENT.getIndex());
-        style.setAlignment(HorizontalAlignment.LEFT);
         style.setBorderBottom(BorderStyle.THIN);
         style.setBottomBorderColor(IndexedColors.GREY_50_PERCENT.getIndex());
-        titleFont.setFontName(ExcelConfig.Style.FONT_NAME);
-        titleFont.setFontHeightInPoints((short) 16);
-        titleFont.setBold(true);
-        style.setFont(titleFont);
+        Font headRowFont = sxssfWorkbook.createFont();
+        headRowFont.setFontName(ExcelConfig.Style.FONT_NAME);
+        headRowFont.setFontHeightInPoints(ExcelConfig.Style.FONT_HEAD_SIZE);
+        headRowFont.setBold(true);
+        style.setFont(headRowFont);
         styles.put(ExcelConfig.Style.HEAD_ROW, style);
 
+        //设置标题样式
         style = sxssfWorkbook.createCellStyle();
+        style.setAlignment(HorizontalAlignment.CENTER);
         style.setVerticalAlignment(VerticalAlignment.CENTER);
         style.setBorderRight(BorderStyle.THIN);
         style.setRightBorderColor(IndexedColors.GREY_50_PERCENT.getIndex());
@@ -158,12 +169,29 @@ public class ExcelExport<T> {
         style.setLeftBorderColor(IndexedColors.GREY_50_PERCENT.getIndex());
         style.setBorderTop(BorderStyle.THIN);
         style.setTopBorderColor(IndexedColors.GREY_50_PERCENT.getIndex());
+        style.setBorderBottom(BorderStyle.THIN);
+        style.setBottomBorderColor(IndexedColors.GREY_50_PERCENT.getIndex());
+        Font titleFont = sxssfWorkbook.createFont();
+        titleFont.setFontName(ExcelConfig.Style.FONT_NAME);
+        titleFont.setFontHeightInPoints(ExcelConfig.Style.FONT_TITLE_SIZE);
+        titleFont.setBold(true);
+        style.setFont(titleFont);
+        styles.put(ExcelConfig.Style.TITLE, style);
+
+        //设置普通单元格样式
+        style = sxssfWorkbook.createCellStyle();
         style.setAlignment(HorizontalAlignment.LEFT);
+        style.setBorderRight(BorderStyle.THIN);
+        style.setRightBorderColor(IndexedColors.GREY_50_PERCENT.getIndex());
+        style.setBorderLeft(BorderStyle.THIN);
+        style.setLeftBorderColor(IndexedColors.GREY_50_PERCENT.getIndex());
+        style.setBorderTop(BorderStyle.THIN);
+        style.setTopBorderColor(IndexedColors.GREY_50_PERCENT.getIndex());
         style.setBorderBottom(BorderStyle.THIN);
         style.setBottomBorderColor(IndexedColors.GREY_50_PERCENT.getIndex());
         Font dataFont = sxssfWorkbook.createFont();
         dataFont.setFontName(ExcelConfig.Style.FONT_NAME);
-        dataFont.setFontHeightInPoints((short) 12);
+        dataFont.setFontHeightInPoints(ExcelConfig.Style.FONT_CELL_SIZE);
         style.setFont(dataFont);
         styles.put(ExcelConfig.Style.DEFAULT_STYLE, style);
 
@@ -312,15 +340,28 @@ public class ExcelExport<T> {
         if(styles == null){
             defaultStyles();
         }
+        if(StringUtil.isNotBlank(this.title)){
+            Row row = this.createRow();
+            Cell cell = row.createCell(0);
+            cell.setCellValue(this.title);
+            cell.setCellStyle(styles.get(ExcelConfig.Style.TITLE));
+            CellRangeAddress region = new CellRangeAddress(0, 0, 0, headRow.length-1);
+            row.createCell(headRow.length-1).setCellStyle(styles.get(ExcelConfig.Style.DEFAULT_STYLE));
+            sheet.addMergedRegion(region);
+        }
         Row row = this.createRow();
         int curCellNum = 0;
-        for (String head : headRow) {
+        for (int i = 0; i < headRow.length; i++) {
+            String head = headRow[i];
             if (head != null) {
                 Cell cell = row.createCell(curCellNum++);
                 cell.setCellValue(head);
                 cell.setCellStyle(styles.get(ExcelConfig.Style.HEAD_ROW));
                 //下面这行代码容易引起文件受损
-                //this.sheet.setColumnWidth((short)i,head.getBytes().length * 2 * 256);
+                //this.sheet.setColumnWidth((short)1,head.getBytes().length * 2 * 256);
+                if(sheet.getColumnWidth(i) < ExcelConfig.Style.CELL_MIN_WIDTH){
+                    sheet.setColumnWidth(i,ExcelConfig.Style.CELL_MIN_WIDTH);
+                }
             }
         }
         this.headRow = headRow;

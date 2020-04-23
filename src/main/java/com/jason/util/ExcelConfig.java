@@ -5,35 +5,73 @@ import java.util.HashMap;
 import java.util.Map;
 
 /**
- * @Auther: Jason
+ * @author Jason
  * @Date: 2020/3/30 13:32
  * @Description:
  */
 public class ExcelConfig {
 
-    //日期格式
+    /**
+     * 日期格式
+     */
     public final static String DATE_IMPORT_FORMAT = "yyyy-MM-dd";
     public final static String DATE_EXPORT_FORMAT = "yyyy-MM-dd";
 
-    //工作簿名称
+    /**
+     * 导出工作簿名称
+     */
     public final static String SHEET_NAME = "Export";
 
-    //样式key常量
+    /**
+     * 样式key常量
+     */
     public static class Style {
+        /**
+         * 标题样式
+         */
+        public final static String TITLE = "headTitle";
+        /**
+         * 首行样式
+         */
         public final static String HEAD_ROW = "headRow";
-        public final static String HEAD_TITLE = "headTitle";
-        public final static String DEFAULT_STYLE = "default";
+        /**
+         * 单元格样式
+         */
+        public final static String DEFAULT_STYLE = "data";
+        /**
+         * 字体类型
+         */
         public final static String FONT_NAME = "微软雅黑";
+        /**
+         * 标题字体大小
+         */
+        public final static short FONT_TITLE_SIZE = 18;
+        /**
+         * headRow字体大小
+         */
+        public final static short FONT_HEAD_SIZE = 15;
+        /**
+         * 单元格字体大小
+         */
+        public final static short FONT_CELL_SIZE = 12;
+        /**
+         * 单元格默认最小宽度
+         */
+        public final static int CELL_MIN_WIDTH = 3000;
     }
 
-    //布尔型模板
+    /**
+     * 布尔型模板
+     */
     public final static String IMPORT_TRUE = "是";
     public final static String IMPORT_FALSE = "否";
     public final static String EXPORT_TRUE = "是";
     public final static String EXPORT_FALSE = "否";
 
-    //其他类型模板
-    //仅支持String类型，主要用于字典数据转换
+
+    /**
+     * 数据模板，仅支持String类型，主要用于字典数据转换、
+     */
     public enum Template{
 
         TEST1("0","测试单元1"),
@@ -71,19 +109,19 @@ public class ExcelConfig {
     }
 
     public static Map<String,String> getTemplateTitle(){
-        Map<String, String> map = new HashMap<>();
         Template[] values = Template.values();
-        for(int i = 0 ; i < values.length; i++){
-            map.put(values[i].getCode(),values[i].getTitle());
+        Map<String, String> map = new HashMap<>(values.length);
+        for (Template value : values) {
+            map.put(value.getCode(), value.getTitle());
         }
         return map;
     }
 
     public static Map<String,String> getTemplateCode(){
-        Map<String, String> map = new HashMap<>();
         Template[] values = Template.values();
-        for(int i = 0 ; i < values.length; i++){
-            map.put(values[i].getTitle(),values[i].getCode());
+        Map<String, String> map = new HashMap<>(values.length);
+        for (Template value : values) {
+            map.put(value.getTitle(), value.getCode());
         }
         return map;
     }
