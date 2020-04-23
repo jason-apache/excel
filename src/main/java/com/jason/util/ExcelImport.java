@@ -121,6 +121,18 @@ public class ExcelImport<T> {
             }else{
                 sheet = hssfWorkbook.getSheetAt(startSheet);
             }
+        }finally {
+            try {
+                is.close();
+            }catch (IOException e1){
+                e1.printStackTrace();
+                try {
+                    Thread.sleep(500);
+                    is.close();
+                }catch (Exception e2){
+                    e1.printStackTrace();
+                }
+            }
         }
 
         //取excel首行列名
@@ -191,7 +203,7 @@ public class ExcelImport<T> {
                     collection.add(o);
                 }
             }catch (Exception e){
-                errorMsg.append("错误信息：第").append(i).append("行，").append(e.getMessage()).append("\r\n");
+                errorMsg.append("错误信息：第").append(i+this.startRow).append("行，").append(e.getMessage()).append("\r\n");
             }
         }
         return errorMsg.toString();
