@@ -22,7 +22,7 @@ public class ExportUseAnno extends DataEntity<ExportUseAnno> {
     @ExcelField(title = "Short",isImport = false,sort = 2)
     private Short aShort;
 
-    @ExcelField(title = "Byte",isImport = false,sort = 3,useTemplate = true,templatePosition = 1)
+    @ExcelField(title = "Byte",isImport = false,sort = 3,useTemplate = true,templateNameKey = "第二个")
     private Byte aByte;
 
     @ExcelField(title = "Double",isImport = false,sort = 4)
@@ -39,7 +39,6 @@ public class ExportUseAnno extends DataEntity<ExportUseAnno> {
 
     private ExportUseAnno parent;
 
-    @ExcelField(title = "字典数据",isImport = false,sort = 9,useTemplate = true)
     private String template;
 
     @ExcelField(title = "date",isImport = false,sort = 10)
@@ -127,6 +126,7 @@ public class ExportUseAnno extends DataEntity<ExportUseAnno> {
         return this;
     }
 
+    @ExcelField(title = "字典数据",isImport = false,sort = 9,useTemplate = true,templateNameKey = "default")
     public String getTemplate() {
         return template;
     }

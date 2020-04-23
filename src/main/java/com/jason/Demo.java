@@ -94,10 +94,10 @@ public class Demo {
 
         ExcelExport<ExportUseAnno> export = new ExcelExport<>(ExportUseAnno.class,"导出测试");
         //配置转换模板格式
-        export.addTemplate(ExcelConfig.getTemplateTitle());
+        export.putTemplate("default",ExcelConfig.getTemplateTitle());
         Map<String, String> template = new HashMap<>(1);
         template.put("0","第二个map");
-        export.addTemplate(template);
+        export.putTemplate("第二个",template);
         String errorMsg = export.outPutData(useAnnoList);
         export.writeToFile("C:/Users/mh262/Desktop/exportUseAnno.xlsx");
         System.out.println(errorMsg);
@@ -105,7 +105,7 @@ public class Demo {
         /*
         ExcelExport<ExcelUseAnno> export = new ExcelExport<>(ExcelUseAnno.class,"导出测试");
         //配置转换模板格式
-        export.addTemplate(ExcelConfig.getTemplateTitle());
+        export.putTemplate("default",ExcelConfig.getTemplateTitle());
         //第二种写法
         for(int i = 0;i<useAnnoList.size();i++){
             try {
@@ -127,7 +127,7 @@ public class Demo {
     public void exportNoUseAnno() throws IOException, InvocationTargetException, IllegalAccessException {
 
         ExcelExport<ExportNoUseAnno> export = new ExcelExport<>(ExportNoUseAnno.class,"导出测试");
-        export.addTemplate(ExcelConfig.getTemplateTitle());
+        export.putTemplate("default",ExcelConfig.getTemplateTitle());
         //不使用注解时，需传入标题行
         String errorMsg = export.outPutData(noUseAnnoList, headRow);
         export.writeToFile("C:/Users/mh262/Desktop/exportNoUseAnno.xlsx");
@@ -137,7 +137,7 @@ public class Demo {
         /*
         //第二种写法
         ExcelExport<ExcelNoUseAnno> export = new ExcelExport<>(ExcelNoUseAnno.class,"导出测试");
-        export.addTemplate(ExcelConfig.getTemplateTitle());
+        export.putTemplate("default",ExcelConfig.getTemplateTitle());
         for(int i = 0 ; i < noUseAnnoList.size(); i++){
             try {
                 if(i == 3){

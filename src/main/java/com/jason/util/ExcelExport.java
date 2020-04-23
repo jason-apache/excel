@@ -71,7 +71,7 @@ public class ExcelExport<T> {
     /**
      *模板格式
      */
-    private List<Map<String,String>> template;
+    private Map<String,Map<String,String>> template;
     /**
      *样式
      */
@@ -199,6 +199,70 @@ public class ExcelExport<T> {
     }
 
     /**
+     * @author Jason
+     * @date 2020/3/30 13:07
+     * @params [row]
+     * 创建标题行
+     * @return void
+     */
+    private void createHeadRow(String[] headRow){
+        if(headRow == null || headRow.length == 0){
+            return;
+        }
+        if(styles == null){
+            defaultStyles();
+        }
+        if(StringUtil.isNotBlank(this.title)){
+            Row row = this.createRow();
+            Cell cell = row.createCell(0);
+            cell.setCellValue(this.title);
+            cell.setCellStyle(styles.get(ExcelConfig.Style.TITLE));
+            CellRangeAddress region = new CellRangeAddress(0, 0, 0, headRow.length-1);
+            row.createCell(headRow.length-1).setCellStyle(styles.get(ExcelConfig.Style.DEFAULT_STYLE));
+            sheet.addMergedRegion(region);
+        }
+        Row row = this.createRow();
+        int curCellNum = 0;
+        for (int i = 0; i < headRow.length; i++) {
+            String head = headRow[i];
+            if (head != null) {
+                Cell cell = row.createCell(curCellNum++);
+                cell.setCellValue(head);
+                cell.setCellStyle(styles.get(ExcelConfig.Style.HEAD_ROW));
+                //下面这行代码容易引起文件受损
+                //this.sheet.setColumnWidth((short)1,head.getBytes().length * 2 * 256);
+                if(sheet.getColumnWidth(i) < ExcelConfig.Style.CELL_MIN_WIDTH){
+                    sheet.setColumnWidth(i,ExcelConfig.Style.CELL_MIN_WIDTH);
+                }
+            }
+        }
+        this.headRow = headRow;
+        hasHeadRow = true;
+    }
+
+    /**
+     * @author Jason
+     * @date 2020/3/27 10:00
+     * @params []
+     * 新增一行数据
+     * @return void
+     */
+    private Row createRow(){
+        return this.sheet.createRow(curRow++);
+    }
+
+    /**
+     * @author Jason
+     * @date 2020/3/30 13:06
+     * @params [row, curCellColumns]
+     * 新增一个单元格
+     * @return org.apache.poi.ss.usermodel.Cell
+     */
+    private Cell createCell(Row row,int curCellColumns){
+        return row.createCell(curCellColumns);
+    }
+
+    /**
     * @author Jason
     * @date 2020/3/26 17:43
     * 输出数据至excel
@@ -244,31 +308,9 @@ public class ExcelExport<T> {
             //开始创建数据
             for (ExcelField excelField : annotationList) {
                 Object o = annotationMapping.get(excelField);
-                if (o instanceof Method) {
-                    if (excelField.useTemplate()) {
-                        String val = template.get(excelField.templatePosition()).get(((Method) o).invoke(t).toString());
-                        Cell cell = this.createCell(row, curCellNum++);
-                        cell.setCellStyle(styles.get(styleKey));
-                        cell.setCellValue(val);
-                    } else {
-                        Object object = ((Method) o).invoke(t);
-                        Cell cell = this.createCell(row, curCellNum++);
-                        cell.setCellStyle(styles.get(styleKey));
-                        this.setValue(cell, object);
-                    }
-                } else if (o instanceof Field) {
-                    ((Field) o).setAccessible(true);
-                    if (excelField.useTemplate()) {
-                        String val = template.get(excelField.templatePosition()).get(((Field) o).get(t).toString());
-                        Cell cell = this.createCell(row, curCellNum++);
-                        cell.setCellStyle(styles.get(styleKey));
-                        cell.setCellValue(val);
-                    } else {
-                        Cell cell = this.createCell(row, curCellNum++);
-                        cell.setCellStyle(styles.get(styleKey));
-                        this.setValue(cell, ((Field) o), t);
-                    }
-                }
+                Cell cell = this.createCell(row, curCellNum++);
+                Object val = this.getVal(excelField, o, t);
+                this.setValue(cell, val);
             }
         }else{
             for(int i = 0; i < headRow.length; i++){
@@ -286,6 +328,69 @@ public class ExcelExport<T> {
         }
 
         return this;
+    }
+
+    /**
+    * @author Jason
+    * @date 2020/4/23 11:12
+    * @params [excelField, o, t]
+    * @return java.lang.Object
+    * 获取值
+    */
+    private Object getVal(ExcelField excelField,Object o,T t) throws InvocationTargetException, IllegalAccessException {
+        if(null == excelField || null == o){
+            return null;
+        }
+        if(o instanceof Method){
+            return this.getVal(excelField,(Method)o,t);
+        }else if(o instanceof Field){
+            return this.getVal(excelField,(Field) o,t);
+        }else {
+            return null;
+        }
+    }
+
+    /**
+    * @author Jason
+    * @date 2020/4/23 11:06
+    * @params [excelField, method, t]
+    * @return java.lang.Object
+    * 获取值
+    */
+    private Object getVal(ExcelField excelField,Method method,T t) throws InvocationTargetException, IllegalAccessException {
+        if(excelField.useTemplate()){
+            Map<String, String> map = template.get(excelField.templateNameKey());
+            if(null != map){
+                Object o = method.invoke(t);
+                return map.get(o == null ? null : o.toString());
+            }else {
+                return null;
+            }
+        }else{
+            return method.invoke(t);
+        }
+    }
+
+    /**
+    * @author Jason
+    * @date 2020/4/23 11:07
+    * @params [excelField, field, t]
+    * @return java.lang.Object
+    * 获取值
+    */
+    private Object getVal(ExcelField excelField,Field field,T t) throws IllegalAccessException {
+        field.setAccessible(true);
+        if(excelField.useTemplate()){
+            Map<String, String> map = template.get(excelField.templateNameKey());
+            if(null != map){
+                Object o = field.get(t);
+                return map.get(o == null ? null : o.toString());
+            }else {
+                return null;
+            }
+        }else{
+            return field.get(t);
+        }
     }
 
     /**
@@ -324,70 +429,6 @@ public class ExcelExport<T> {
             this.createHeadRow(headRow);
         }
         return this.outPutData(t);
-    }
-
-    /**
-    * @author Jason
-    * @date 2020/3/30 13:07
-    * @params [row]
-    * 创建标题行
-    * @return void
-    */
-    private void createHeadRow(String[] headRow){
-        if(headRow == null || headRow.length == 0){
-            return;
-        }
-        if(styles == null){
-            defaultStyles();
-        }
-        if(StringUtil.isNotBlank(this.title)){
-            Row row = this.createRow();
-            Cell cell = row.createCell(0);
-            cell.setCellValue(this.title);
-            cell.setCellStyle(styles.get(ExcelConfig.Style.TITLE));
-            CellRangeAddress region = new CellRangeAddress(0, 0, 0, headRow.length-1);
-            row.createCell(headRow.length-1).setCellStyle(styles.get(ExcelConfig.Style.DEFAULT_STYLE));
-            sheet.addMergedRegion(region);
-        }
-        Row row = this.createRow();
-        int curCellNum = 0;
-        for (int i = 0; i < headRow.length; i++) {
-            String head = headRow[i];
-            if (head != null) {
-                Cell cell = row.createCell(curCellNum++);
-                cell.setCellValue(head);
-                cell.setCellStyle(styles.get(ExcelConfig.Style.HEAD_ROW));
-                //下面这行代码容易引起文件受损
-                //this.sheet.setColumnWidth((short)1,head.getBytes().length * 2 * 256);
-                if(sheet.getColumnWidth(i) < ExcelConfig.Style.CELL_MIN_WIDTH){
-                    sheet.setColumnWidth(i,ExcelConfig.Style.CELL_MIN_WIDTH);
-                }
-            }
-        }
-        this.headRow = headRow;
-        hasHeadRow = true;
-    }
-
-    /**
-    * @author Jason
-    * @date 2020/3/27 10:00
-    * @params []
-    * 新增一行数据
-    * @return void
-    */
-    private Row createRow(){
-        return this.sheet.createRow(curRow++);
-    }
-
-    /**
-    * @author Jason
-    * @date 2020/3/30 13:06
-    * @params [row, curCellColumns]
-    * 新增一个单元格
-    * @return org.apache.poi.ss.usermodel.Cell
-    */
-    private Cell createCell(Row row,int curCellColumns){
-        return row.createCell(curCellColumns);
     }
 
     /**
@@ -504,11 +545,11 @@ public class ExcelExport<T> {
     * 设值模板格式
     * @return com.jason.util.ExcelExport<T>
     */
-    public ExcelExport<T> addTemplate(Map<String, String> template) {
+    public ExcelExport<T> putTemplate(String key,Map<String, String> template) {
         if(this.template == null){
-            this.template = new ArrayList<>();
+            this.template = new HashMap<>(16);
         }
-        this.template.add(template);
+        this.template.put(key,template);
         return this;
     }
 
