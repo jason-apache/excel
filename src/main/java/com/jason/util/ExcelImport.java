@@ -202,8 +202,11 @@ public class ExcelImport<T> {
                 if(null != o){
                     collection.add(o);
                 }
-            }catch (Exception e){
-                errorMsg.append("错误信息：第").append(i+this.startRow).append("行，").append(e.getMessage()).append("\r\n");
+            } catch (IllegalStateException | NumberFormatException | ParseException e){
+                String[] msg = e.getMessage().split(":");
+                errorMsg.append("错误信息：单元格数据格式异常，第").append(i+this.startRow).append("行，").append(msg[msg.length-1]).append("\r\n");
+            } catch (Exception e){
+                errorMsg.append("错误信息：第").append(i+this.startRow).append("行，").append(e.toString()).append("\r\n");
             }
         }
         return errorMsg.toString();
@@ -365,17 +368,17 @@ public class ExcelImport<T> {
             Date date = new SimpleDateFormat(ExcelConfig.DATE_IMPORT_FORMAT).parse(cell.toString());
             method.invoke(instance,date);
         }else if(type == Integer.class){
-            method.invoke(instance,new Double(cell.getNumericCellValue()).intValue());
+            method.invoke(instance,new Double(cell.toString()).intValue());
         }else if(type == Double.class){
-            method.invoke(instance, cell.getNumericCellValue());
+            method.invoke(instance, Double.parseDouble(cell.toString()));
         }else if(type == Long.class){
-            method.invoke(instance,new Double(cell.getNumericCellValue()).longValue());
+            method.invoke(instance,new Double(cell.toString()).longValue());
         }else if(type == Float.class){
-            method.invoke(instance,new Double(cell.getNumericCellValue()).floatValue());
+            method.invoke(instance,new Double(cell.toString()).floatValue());
         }else if(type == Short.class){
-            method.invoke(instance,new Double(cell.getNumericCellValue()).shortValue());
+            method.invoke(instance,new Double(cell.toString()).shortValue());
         }else if(type == Byte.class){
-            method.invoke(instance,new Double(cell.getNumericCellValue()).byteValue());
+            method.invoke(instance,new Double(cell.toString()).byteValue());
         }else if(type == Boolean.class){
             if(ExcelConfig.IMPORT_TRUE.equals(cell.toString())){
                 method.invoke(instance,true);
@@ -420,17 +423,17 @@ public class ExcelImport<T> {
             Date date = new SimpleDateFormat(ExcelConfig.DATE_IMPORT_FORMAT).parse(cell.toString());
             field.set(instance,date);
         }else if(field.getType() == Integer.class){
-            field.set(instance,new Double(cell.getNumericCellValue()).intValue());
+            field.set(instance,new Double(cell.toString()).intValue());
         }else if(field.getType() == Double.class){
-            field.set(instance,cell.getNumericCellValue());
+            field.set(instance,cell.toString());
         }else if(field.getType() == Long.class){
-            field.set(instance,new Double(cell.getNumericCellValue()).longValue());
+            field.set(instance,new Double(cell.toString()).longValue());
         }else if(field.getType() == Float.class){
-            field.set(instance,new Double(cell.getNumericCellValue()).floatValue());
+            field.set(instance,new Double(cell.toString()).floatValue());
         }else if(field.getType() == Short.class){
-            field.set(instance,new Double(cell.getNumericCellValue()).shortValue());
+            field.set(instance,new Double(cell.toString()).shortValue());
         }else if(field.getType() == Byte.class){
-            field.set(instance,new Double(cell.getNumericCellValue()).byteValue());
+            field.set(instance,new Double(cell.toString()).byteValue());
         }else if(field.getType() == Boolean.class){
             if(ExcelConfig.IMPORT_TRUE.equals(cell.toString())){
                 field.set(instance,true);
