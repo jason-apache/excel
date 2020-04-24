@@ -230,23 +230,21 @@ public class ExcelImport<T> {
         T t = clazz.newInstance();
         //根据参数位置映射，开始解析excel
         for (ExcelField excelField : annotationList) {
-            if (null != excelField) {
-                Object o = annotationMapping.get(excelField);
-                Cell cell = null;
-                //如果使用了position属性
-                if (excelField.position() != -1) {
-                    cell = row.getCell(excelField.position());
+            Object o = annotationMapping.get(excelField);
+            Cell cell = null;
+            //如果使用了position属性
+            if (excelField.position() != -1) {
+                cell = row.getCell(excelField.position());
+            } else {
+                Integer index = titleMapping.get(excelField.title());
+                if (null != index) {
+                    cell = row.getCell(index);
                 } else {
-                    Integer index = titleMapping.get(excelField.title());
-                    if (null != index) {
-                        cell = row.getCell(titleMapping.get(excelField.title()));
-                    } else {
-                        continue;
-                    }
+                    continue;
                 }
-
-                this.setValue(o,excelField,cell,t);
             }
+
+            this.setValue(o,excelField,cell,t);
         }
         //是否自动根据参数名映射 默认开启
         if(autoMappingByFieldName){

@@ -318,11 +318,9 @@ public class ExcelExport<T> {
                     break;
                 }
                 Field field = fields[i];
-                if(null != field){
-                    field.setAccessible(true);
-                    Cell cell = this.createCell(row, curCellNum++);
-                    this.setValue(cell,field,t);
-                }
+                field.setAccessible(true);
+                Cell cell = this.createCell(row, curCellNum++);
+                this.setValue(cell,field,t);
             }
         }
 
