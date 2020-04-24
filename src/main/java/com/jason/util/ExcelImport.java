@@ -359,13 +359,18 @@ public class ExcelImport<T> {
                 method.invoke(instance, format);
             }else if(numberFlag){
                 method.invoke(instance,
-                        new Double(cell.getNumericCellValue()).intValue());
+                        new Double(cell.toString()).intValue());
             }else{
                 method.invoke(instance, cell.toString());
             }
         }
         if(type == Date.class){
-            Date date = new SimpleDateFormat(ExcelConfig.DATE_IMPORT_FORMAT).parse(cell.toString());
+            Date date;
+            if(dateFlag){
+                date = cell.getDateCellValue();
+            }else {
+                date = new SimpleDateFormat(ExcelConfig.DATE_IMPORT_FORMAT).parse(cell.toString());
+            }
             method.invoke(instance,date);
         }else if(type == Integer.class){
             method.invoke(instance,new Double(cell.toString()).intValue());
@@ -386,7 +391,7 @@ public class ExcelImport<T> {
                 method.invoke(instance,false);
             }
         }else if(type == Character.class){
-            method.invoke(instance,cell.getStringCellValue().toCharArray()[0]);
+            method.invoke(instance,cell.toString().toCharArray()[0]);
         }
     }
 
@@ -413,14 +418,19 @@ public class ExcelImport<T> {
                 field.set(instance, format);
             }else if(numberFlag){
                 field.set(instance,
-                        new Double(cell.getNumericCellValue()).intValue());
+                        new Double(cell.toString()).intValue());
             }else{
                 field.set(instance, cell.toString());
             }
         }
 
         if(field.getType() == Date.class){
-            Date date = new SimpleDateFormat(ExcelConfig.DATE_IMPORT_FORMAT).parse(cell.toString());
+            Date date;
+            if(dateFlag){
+                date = cell.getDateCellValue();
+            }else {
+                date = new SimpleDateFormat(ExcelConfig.DATE_IMPORT_FORMAT).parse(cell.toString());
+            }
             field.set(instance,date);
         }else if(field.getType() == Integer.class){
             field.set(instance,new Double(cell.toString()).intValue());
@@ -441,7 +451,7 @@ public class ExcelImport<T> {
                 field.set(instance,false);
             }
         }else if(field.getType() == Character.class){
-            field.set(instance,cell.getStringCellValue());
+            field.set(instance,cell.toString().toCharArray()[0]);
         }
     }
 
