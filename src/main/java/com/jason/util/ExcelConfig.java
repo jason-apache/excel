@@ -18,6 +18,11 @@ public class ExcelConfig {
     public final static String DATE_EXPORT_FORMAT = "yyyy-MM-dd";
 
     /**
+     * call分隔符
+     */
+    public final static String CALL_SEPARATOR = ".";
+
+    /**
      * 导出工作簿名称
      */
     public final static String SHEET_NAME = "Export";

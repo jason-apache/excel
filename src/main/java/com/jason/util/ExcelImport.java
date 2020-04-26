@@ -15,6 +15,7 @@ import java.io.InputStream;
 import java.lang.reflect.Field;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
+import java.lang.reflect.Parameter;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.util.*;
@@ -220,7 +221,7 @@ public class ExcelImport<T> {
      * @return T
      */
     public T getObject(Row row) throws IllegalAccessException, InstantiationException,
-            NoSuchMethodException, InvocationTargetException, IOException, ParseException {
+            NoSuchMethodException, InvocationTargetException, IOException, ParseException, NoSuchFieldException {
         if(null == row || row.getLastCellNum() == 0){
             return null;
         }
@@ -245,7 +246,7 @@ public class ExcelImport<T> {
             }
 
             this.setValue(o,excelField,cell,t);
-        }
+         }
         //是否自动根据参数名映射 默认开启
         if(autoMappingByFieldName){
             for(Field f : fieldsSet){
@@ -254,7 +255,7 @@ public class ExcelImport<T> {
                 if(null != index){
                     if(null == f.get(t)){
                         Cell cell = row.getCell(index);
-                        this.setValue(f,cell,t);
+                        this.setValue(f,null,cell,t);
                     }
                 }
             }
@@ -269,20 +270,14 @@ public class ExcelImport<T> {
      * @return void
      * 设值，过滤模板格式
      */
-    private void setValue(Object o,ExcelField excelField, Cell cell, T t)
-            throws IllegalAccessException, ParseException, InvocationTargetException, NoSuchMethodException, InstantiationException {
-        Object val = null;
-        if(excelField.useTemplate()){
-            Map<String, String> map = template.get(excelField.templateNameKey());
-            if(null != map){
-                val = map.get(cell.toString());
-            }
-        }
+    private void setValue(Object o,ExcelField excelField, Cell cell, Object t)
+            throws IllegalAccessException, ParseException, InvocationTargetException, NoSuchMethodException, InstantiationException, NoSuchFieldException {
 
+        //模板格式转换后的数据传递进去
         if(o instanceof Method){
-            this.setValue((Method) o,excelField,cell,val,t);
+            this.setMethodValue((Method) o,excelField,cell,t);
         }else if(o instanceof Field){
-            this.setValue((Field) o,excelField,cell,val,t);
+            this.setFiledValue((Field) o,excelField,cell,t);
         }
     }
 
@@ -293,13 +288,90 @@ public class ExcelImport<T> {
      * @return void
      * 设值
      */
-    private void setValue(Field field,ExcelField excelField,Cell cell,Object val,T t) throws ParseException, IllegalAccessException {
-        field.setAccessible(true);
-        if(excelField.useTemplate()){
-            field.set(t,val);
-        }else {
-            this.setValue(field,cell,t);
+    private void setFiledValue(Field field,ExcelField excelField,Cell cell,Object instance)
+            throws ParseException, IllegalAccessException, NoSuchFieldException, InstantiationException,
+            NoSuchMethodException, InvocationTargetException {
+
+        if(StringUtil.isNotBlank(excelField.call())){
+            this.recursion(field,excelField,null,cell,instance,0);
+        }else{
+            field.setAccessible(true);
+            //如果使用了callMethod属性
+            if(StringUtil.isNotBlank(excelField.callMethod())){
+                Object thisInstance = field.getType().newInstance();
+                Method callMethod = field.getType().getMethod(excelField.callMethod(), excelField.callClass());
+                this.invoke(callMethod,excelField,cell,thisInstance);
+                field.set(instance,thisInstance);
+            }else {
+                this.setValue(field,excelField,cell,instance);
+            }
         }
+    }
+
+    private Object recursion(Field field,ExcelField excelField,String node,Cell cell,Object instance,int count)
+            throws ParseException, IllegalAccessException, NoSuchFieldException, InstantiationException,
+            NoSuchMethodException, InvocationTargetException {
+
+        field.setAccessible(true);
+        if(node == null){
+            node = excelField.call();
+        }
+        //层级调用
+        int index = node.indexOf(ExcelConfig.CALL_SEPARATOR);
+        //满足递归条件
+        if(index != -1){
+            //节点拆分
+            String curNode = node.substring(0,index);
+            String nextNode = node.substring(index+1);
+            //当前实例中获取call的当前节点属性
+            Field curField = field.getType().getDeclaredField(curNode);
+            //创建出下一节点实例
+            Object nextInstance = curField.getType().newInstance();
+            curField.setAccessible(true);
+            //如果是第一次递归，则先把当前属性创建出一个实例，并建立关联，再将这个实例与下一个实例相关联
+            if(count == 0){
+                Object thisInstance = field.getType().newInstance();
+                field.set(instance,thisInstance);
+                curField.set(thisInstance,nextInstance);
+            }else{
+                //否则将当前实例直接关联
+                curField.set(instance,nextInstance);
+            }
+            //记录递归次数
+            count++;
+            this.recursion(curField,excelField,nextNode,cell,nextInstance,count);
+        }else {
+            //满足递归退出条件：所有节点实例都创建完毕
+            Field curField = field.getType().getDeclaredField(node);
+            curField.setAccessible(true);
+            //如果使用了callMethod属性
+            if(StringUtil.isNotBlank(excelField.callMethod())){
+                //如果没有递归，需要让原字段与处理后的对象实例建立关系
+                if(count == 0){
+                    Object originalInstance = field.getType().newInstance();
+                    Object thisInstance = curField.getType().newInstance();
+                    Method callMethod = curField.getType().getMethod(excelField.callMethod(), excelField.callClass());
+                    this.invoke(callMethod,excelField,cell,thisInstance);
+                    curField.set(originalInstance,thisInstance);
+                    field.set(instance,originalInstance);
+                }else {
+                    Object thisInstance = curField.getType().newInstance();
+                    Method callMethod = curField.getType().getMethod(excelField.callMethod(), excelField.callClass());
+                    this.invoke(callMethod,excelField,cell,thisInstance);
+                    curField.set(instance,thisInstance);
+                }
+            }else{
+                //如果没有递归，需要让原字段与处理后的对象实例建立关系
+                if(count == 0){
+                    Object thisInstance = field.getType().newInstance();
+                    this.setValue(curField,excelField,cell,thisInstance);
+                    field.set(instance,thisInstance);
+                }else{
+                    this.setValue(curField,excelField,cell,instance);
+                }
+            }
+        }
+        return instance;
     }
 
     /**
@@ -309,24 +381,57 @@ public class ExcelImport<T> {
      * @return void
      * 设值
      */
-    private void setValue(Method method,ExcelField excelField,Cell cell,Object val,T t)
-            throws InvocationTargetException, IllegalAccessException, ParseException, NoSuchMethodException, InstantiationException {
-        if(StringUtil.isNotBlank(excelField.targetMethod())){
-            Object target = method.getParameterTypes()[0].newInstance();
-            Method targetMethod = target.getClass().getMethod(excelField.targetMethod(), excelField.targetClass());
-            if(excelField.useTemplate()){
-                targetMethod.invoke(target,val);
-            }else{
-                this.invoke(targetMethod,cell,target);
+    private void setMethodValue(Method method,ExcelField excelField,Cell cell,Object t)
+            throws InvocationTargetException, IllegalAccessException, ParseException, NoSuchMethodException, InstantiationException, NoSuchFieldException {
+        //是否使用call属性
+        if(StringUtil.isNotBlank(excelField.call())){
+            //获取方法参数列表第一个参数类型
+            Class<?> arg = method.getParameterTypes()[0];
+            //分隔call节点
+            int index = excelField.call().indexOf(ExcelConfig.CALL_SEPARATOR);
+            Field field;
+            if(index != -1){
+                field = arg.getDeclaredField(excelField.call().substring(0, index));
+                Object thisInstance = field.getType().newInstance();
+                String nextNode = excelField.call().substring(index+1);
+                Object instance = this.recursion(field, excelField, nextNode, cell, thisInstance, 0);
+                //判断是否引用本身类型
+                if(instance.getClass() != arg){
+                    Object parameter = arg.newInstance();
+                    field.setAccessible(true);
+                    field.set(parameter,instance);
+                    //递归后返回的实例set至实体中
+                    method.invoke(t,parameter);
+                }else{
+                    method.invoke(t,instance);
+                }
+            }else {
+                if(StringUtil.isNotBlank(excelField.callMethod())){
+                    //如果使用了callMethod属性
+                    field = arg.getDeclaredField(excelField.call());
+                    field.setAccessible(true);
+                    Object thisInstance = field.getType().newInstance();
+                    Method targetMethod = field.getType().getMethod(excelField.callMethod(), excelField.callClass());
+                    this.invoke(targetMethod,excelField,cell,thisInstance);
+                    Object parameter = arg.newInstance();
+                    field.set(parameter,thisInstance);
+                    method.invoke(t,parameter);
+                }else{
+                    Object parameter = arg.newInstance();
+                    field = arg.getDeclaredField(excelField.call());
+                    field.setAccessible(true);
+                    this.setValue(field,excelField,cell,parameter);
+                    method.invoke(t,parameter);
+                }
             }
-
+        }else if(StringUtil.isNotBlank(excelField.callMethod())){
+            //如果使用了callMethod属性
+            Object target = method.getParameterTypes()[0].newInstance();
+            Method targetMethod = target.getClass().getMethod(excelField.callMethod(), excelField.callClass());
+            this.invoke(targetMethod,excelField,cell,target);
             method.invoke(t,target);
         }else {
-            if(excelField.useTemplate()){
-                method.invoke(t,val);
-            }else {
-                this.invoke(method,cell,t);
-            }
+            this.invoke(method,excelField,cell,t);
         }
     }
 
@@ -337,11 +442,19 @@ public class ExcelImport<T> {
      * 根据不同参数类型执行方法
      * @return void
      */
-    private void invoke(Method method,Cell cell,Object instance)
+    private void invoke(Method method,ExcelField excelField,Cell cell,Object instance)
             throws InvocationTargetException, IllegalAccessException, ParseException {
 
         if(cell == null || cell.toString().length() == 0){
             return;
+        }
+        if(null != excelField && excelField.useTemplate()){
+            Map<String, String> map = template.get(excelField.templateNameKey());
+            if(null != map){
+                String val = map.get(cell.toString());
+                method.invoke(instance,val);
+                return;
+            }
         }
         //检测excel单元格是否为数字类型
         boolean numberFlag = cell.getCellTypeEnum() == CellType.NUMERIC;
@@ -400,9 +513,17 @@ public class ExcelImport<T> {
      * 根据不同参数类型给字段设置
      * @return void
      */
-    private void setValue(Field field,Cell cell,Object instance) throws IllegalAccessException, ParseException {
+    private void setValue(Field field,ExcelField excelField,Cell cell,Object instance) throws IllegalAccessException, ParseException {
         if(cell == null || cell.toString().length() == 0){
             return;
+        }
+        if(null != excelField && excelField.useTemplate()){
+            Map<String, String> map = template.get(excelField.templateNameKey());
+            if(null != map){
+                String val = map.get(cell.toString());
+                field.set(instance,val);
+                return;
+            }
         }
         //检测excel单元格是否为数字类型
         boolean numberFlag = cell.getCellTypeEnum() == CellType.NUMERIC;
@@ -475,11 +596,11 @@ public class ExcelImport<T> {
      * 配置模板
      * @return com.jason.util.ExcelImport<T>
      */
-    public ExcelImport<T> putTemplate(String key, Map<String, String> template) {
+    public ExcelImport<T> putTemplate(String nameKey, Map<String, String> template) {
         if(null == this.template){
             this.template = new HashMap<>(10);
         }
-        this.template.put(key,template);
+        this.template.put(nameKey,template);
         return this;
     }
 

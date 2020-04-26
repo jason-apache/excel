@@ -2,6 +2,7 @@ package com.jason.entity.myimport;
 
 import com.jason.anno.ExcelField;
 import com.jason.base.DataEntity;
+import com.jason.entity.demo.Student;
 
 import java.util.Date;
 
@@ -34,6 +35,9 @@ public class ImportUseAnno extends DataEntity<ImportUseAnno> {
     private ImportUseAnno parent;
 
     private String template;
+
+    @ExcelField(title = "parent",call = "classes.name")
+    private Student student;
 
     private Date date;
 
@@ -120,7 +124,8 @@ public class ImportUseAnno extends DataEntity<ImportUseAnno> {
         return parent;
     }
 
-    @ExcelField(title = "parent",targetMethod = "setTemplate",targetClass = String.class,useTemplate = true,templateNameKey = "parent")
+    @ExcelField(title = "parent",call = "parent.student", callMethod = "setName",
+            useTemplate = true,templateNameKey = "parent")
     public ImportUseAnno setParent(ImportUseAnno parent) {
         this.parent = parent;
         return this;
