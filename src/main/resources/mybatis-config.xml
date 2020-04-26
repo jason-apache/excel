@@ -52,13 +52,13 @@
     </typeAliases>
 
     <plugins>
-        <plugin interceptor="com.jason.common.SQLInterceptor"></plugin>
+        <plugin interceptor="com.jason.common.SQLInterceptor"/>
     </plugins>
 
     <environments default="demo">
         <environment id="mysql">
             <!-- 配置JDBC事务,此事务由mybatis管理 -->
-            <transactionManager type="JDBC"></transactionManager>
+            <transactionManager type="JDBC"/>
             <!-- 配置连接池,此连接池为mybatis连接池 -->
             <dataSource type="POOLED">
                 <property name="driver" value="${jdbc.mysql.driver}"/>
@@ -70,7 +70,7 @@
 
         <environment id="oracle">
             <!-- 配置JDBC事务,此事务由mybatis管理 -->
-            <transactionManager type="JDBC"></transactionManager>
+            <transactionManager type="JDBC"/>
             <!-- 配置连接池,此连接池为mybatis连接池 -->
             <dataSource type="POOLED">
                 <property name="driver" value="${jdbc.oracle.driver}"/>
@@ -82,7 +82,7 @@
 
         <environment id="demo">
             <!-- 配置JDBC事务,此事务由mybatis管理 -->
-            <transactionManager type="JDBC"></transactionManager>
+            <transactionManager type="JDBC"/>
             <!-- 配置连接池,此连接池为mybatis连接池 -->
             <dataSource type="POOLED">
                 <property name="driver" value="${jdbc.mysql.driver}"/>

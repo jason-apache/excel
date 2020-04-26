@@ -15,7 +15,6 @@ import java.io.InputStream;
 import java.lang.reflect.Field;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
-import java.lang.reflect.Parameter;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.util.*;
@@ -207,6 +206,7 @@ public class ExcelImport<T> {
                 String[] msg = e.getMessage().split(":");
                 errorMsg.append("错误信息：单元格数据格式异常，第").append(i+this.startRow).append("行，").append(msg[msg.length-1]).append("\r\n");
             } catch (Exception e){
+                e.printStackTrace();
                 errorMsg.append("错误信息：第").append(i+this.startRow).append("行，").append(e.toString()).append("\r\n");
             }
         }
@@ -308,6 +308,13 @@ public class ExcelImport<T> {
         }
     }
 
+    /**
+    * @author Jason
+    * @date 2020/4/26 17:29
+    * @params [field, excelField, node, cell, instance, count]
+    * 递归调用
+    * @return java.lang.Object
+    */
     private Object recursion(Field field,ExcelField excelField,String node,Cell cell,Object instance,int count)
             throws ParseException, IllegalAccessException, NoSuchFieldException, InstantiationException,
             NoSuchMethodException, InvocationTargetException {

@@ -278,6 +278,7 @@ public class ExcelExport<T> {
                     this.outPutData(t);
                     currentElement++;
                 }catch (Exception e){
+                    e.printStackTrace();
                     errorMsg.append("错误信息：第").append(currentElement).append("行，").append(e.getMessage()).append("\r\n");
                 }
             }
@@ -545,11 +546,11 @@ public class ExcelExport<T> {
     * 设值模板格式
     * @return com.jason.util.ExcelExport<T>
     */
-    public ExcelExport<T> putTemplate(String key,Map<String, String> template) {
+    public ExcelExport<T> putTemplate(String nameKey,Map<String, String> template) {
         if(this.template == null){
             this.template = new HashMap<>(16);
         }
-        this.template.put(key,template);
+        this.template.put(nameKey,template);
         return this;
     }
 
