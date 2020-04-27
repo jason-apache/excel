@@ -273,7 +273,6 @@ public class ExcelImport<T> {
     private void setValue(Object o,ExcelField excelField, Cell cell, Object t)
             throws IllegalAccessException, ParseException, InvocationTargetException, NoSuchMethodException, InstantiationException, NoSuchFieldException {
 
-        //模板格式转换后的数据传递进去
         if(o instanceof Method){
             this.setMethodValue((Method) o,excelField,cell,t);
         }else if(o instanceof Field){
@@ -397,29 +396,34 @@ public class ExcelImport<T> {
             //分隔call节点
             int index = excelField.call().indexOf(ExcelConfig.CALL_SEPARATOR);
             Field field;
+            //判断是否需要递归
             if(index != -1){
+                //如果使用了callMethod属性,则把call节点取出，从方法参数实体中获取field
                 field = arg.getDeclaredField(excelField.call().substring(0, index));
                 Object thisInstance = field.getType().newInstance();
                 String nextNode = excelField.call().substring(index+1);
+                //递归
                 Object instance = this.recursion(field, excelField, nextNode, cell, thisInstance, 0);
                 //判断是否引用本身类型
                 if(instance.getClass() != arg){
+                    //创建方法中的参数实例，建立关联
                     Object parameter = arg.newInstance();
                     field.setAccessible(true);
-                    field.set(parameter,instance);
                     //递归后返回的实例set至实体中
+                    field.set(parameter,instance);
                     method.invoke(t,parameter);
                 }else{
                     method.invoke(t,instance);
                 }
             }else {
                 if(StringUtil.isNotBlank(excelField.callMethod())){
-                    //如果使用了callMethod属性
+                    //如果使用了callMethod属性,则把call节点取出，从方法参数实体中获取field
                     field = arg.getDeclaredField(excelField.call());
                     field.setAccessible(true);
                     Object thisInstance = field.getType().newInstance();
                     Method targetMethod = field.getType().getMethod(excelField.callMethod(), excelField.callClass());
                     this.invoke(targetMethod,excelField,cell,thisInstance);
+                    //创建方法中的参数实例，建立关联
                     Object parameter = arg.newInstance();
                     field.set(parameter,thisInstance);
                     method.invoke(t,parameter);
@@ -445,8 +449,8 @@ public class ExcelImport<T> {
     /**
      * @author Jason
      * @date 2020/4/20 14:32
-     * @params [method, cell, instance]
-     * 根据不同参数类型执行方法
+     * @params [method, excelField, cell, instance]
+     * 根据不同参数类型执行方法，转换模板数据
      * @return void
      */
     private void invoke(Method method,ExcelField excelField,Cell cell,Object instance)
@@ -516,8 +520,8 @@ public class ExcelImport<T> {
     /**
      * @author Jason
      * @date 2020/4/20 14:32
-     * @params [field, cell, instance]
-     * 根据不同参数类型给字段设置
+     * @params [field, excelField, cell, instance]
+     * 根据不同参数类型给字段设置，转换模板数据
      * @return void
      */
     private void setValue(Field field,ExcelField excelField,Cell cell,Object instance) throws IllegalAccessException, ParseException {
