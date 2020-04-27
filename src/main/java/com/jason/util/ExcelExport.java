@@ -311,7 +311,7 @@ public class ExcelExport<T> {
                 Object o = annotationMapping.get(excelField);
                 Cell cell = this.createCell(row, curCellNum++);
                 Object val = this.getVal(excelField, o, t);
-                this.setValue(cell, val);
+                this.setValue(excelField,cell, val);
             }
         }else{
             for(int i = 0; i < headRow.length; i++){
@@ -320,8 +320,9 @@ public class ExcelExport<T> {
                 }
                 Field field = fields[i];
                 field.setAccessible(true);
+                Object val = field.get(t);
                 Cell cell = this.createCell(row, curCellNum++);
-                this.setValue(cell,field,t);
+                this.setValue(null,cell,val);
             }
         }
 
@@ -340,9 +341,9 @@ public class ExcelExport<T> {
             return null;
         }
         if(o instanceof Method){
-            return this.getVal(excelField,(Method)o,t);
+            return this.getMethodVal(excelField,(Method)o,t);
         }else if(o instanceof Field){
-            return this.getVal(excelField,(Field) o,t);
+            return this.getFieldVal(excelField,(Field) o,t);
         }else {
             return null;
         }
@@ -355,18 +356,8 @@ public class ExcelExport<T> {
     * @return java.lang.Object
     * 获取值
     */
-    private Object getVal(ExcelField excelField,Method method,T t) throws InvocationTargetException, IllegalAccessException {
-        if(excelField.useTemplate()){
-            Map<String, String> map = template.get(excelField.templateNameKey());
-            if(null != map){
-                Object o = method.invoke(t);
-                return map.get(o == null ? null : o.toString());
-            }else {
-                return null;
-            }
-        }else{
-            return method.invoke(t);
-        }
+    private Object getMethodVal(ExcelField excelField,Method method,T t) throws InvocationTargetException, IllegalAccessException {
+        return method.invoke(t);
     }
 
     /**
@@ -376,19 +367,9 @@ public class ExcelExport<T> {
     * @return java.lang.Object
     * 获取值
     */
-    private Object getVal(ExcelField excelField,Field field,T t) throws IllegalAccessException {
+    private Object getFieldVal(ExcelField excelField,Field field,T t) throws IllegalAccessException {
         field.setAccessible(true);
-        if(excelField.useTemplate()){
-            Map<String, String> map = template.get(excelField.templateNameKey());
-            if(null != map){
-                Object o = field.get(t);
-                return map.get(o == null ? null : o.toString());
-            }else {
-                return null;
-            }
-        }else{
-            return field.get(t);
-        }
+        return field.get(t);
     }
 
     /**
@@ -485,29 +466,23 @@ public class ExcelExport<T> {
     /**
      * @author Jason
      * @date 2020/3/30 13:17
-     * @params [cell, field, t]
-     * 设值至单元格
+     * @params [excelField,cell, field]
+     * 设值至单元格，转换模板数据
      * @return void
      */
-    private void setValue(Cell cell,Field field,T t) throws IllegalAccessException {
-
-        Object obj = field.get(t);
-        this.setValue(cell,obj);
-    }
-
-    /**
-     * @author Jason
-     * @date 2020/3/30 13:17
-     * @params [cell, field]
-     * 设值至单元格
-     * @return void
-     */
-    private void setValue(Cell cell,Object object){
+    private void setValue(ExcelField excelField,Cell cell,Object object){
         //设置样式
         cell.setCellStyle(styles.get(styleKey));
         if(object == null){
             cell.setCellValue("");
             return;
+        }
+        if(null != excelField && excelField.useTemplate()){
+            Map<String, String> map = template.get(excelField.templateNameKey());
+            if(null != map){
+                cell.setCellValue(map.get(object.toString()));
+                return;
+            }
         }
 
         if(object instanceof String){
