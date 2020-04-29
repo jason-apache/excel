@@ -1,5 +1,6 @@
 package com.jason.entity.demo;
 
+import com.jason.base.BaseEntity;
 import com.jason.base.DataEntity;
 
 import java.util.List;
@@ -23,13 +24,17 @@ public class Classes extends DataEntity<Classes> {
     }
 
     public String getName() {
-        System.out.println("我被执行了");
         return name;
     }
 
     public Classes setName(String name) {
         this.name = name;
         return this;
+    }
+
+    @Override
+    public BaseEntity<Classes> setId(String id) {
+        return super.setId(id);
     }
 
     public List<Student> getStudentList() {

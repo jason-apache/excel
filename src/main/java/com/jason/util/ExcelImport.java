@@ -268,7 +268,7 @@ public class ExcelImport<T> {
      * @date 2020/4/23 14:17
      * @params [o, excelField, cell, t]
      * @return void
-     * 设值，过滤模板格式
+     * 设值
      */
     private void setValue(Object o,ExcelField excelField, Cell cell, Object t)
             throws IllegalAccessException, ParseException, InvocationTargetException, NoSuchMethodException, InstantiationException, NoSuchFieldException {
@@ -291,93 +291,20 @@ public class ExcelImport<T> {
             throws ParseException, IllegalAccessException, NoSuchFieldException, InstantiationException,
             NoSuchMethodException, InvocationTargetException {
 
-        if(StringUtil.isNotBlank(excelField.call())){
-            this.recursion(field,excelField,null,cell,instance,0);
-        }else{
-            field.setAccessible(true);
-            //如果使用了callMethod属性
-            if(StringUtil.isNotBlank(excelField.callMethod())){
-                Object thisInstance = field.getType().newInstance();
-                Method callMethod = field.getType().getMethod(excelField.callMethod(), excelField.callClass());
-                this.invoke(callMethod,excelField,cell,thisInstance);
-                field.set(instance,thisInstance);
-            }else {
-                this.setValue(field,excelField,cell,instance);
-            }
-        }
-    }
-
-    /**
-    * @author Jason
-    * @date 2020/4/26 17:29
-    * @params [field, excelField, node, cell, instance, count]
-    * 递归调用
-    * @return java.lang.Object
-    */
-    private Object recursion(Field field,ExcelField excelField,String node,Cell cell,Object instance,int count)
-            throws ParseException, IllegalAccessException, NoSuchFieldException, InstantiationException,
-            NoSuchMethodException, InvocationTargetException {
-
         field.setAccessible(true);
-        if(node == null){
-            node = excelField.call();
-        }
-        //层级调用
-        int index = node.indexOf(ExcelConfig.CALL_SEPARATOR);
-        //满足递归条件
-        if(index != -1){
-            //节点拆分
-            String curNode = node.substring(0,index);
-            String nextNode = node.substring(index+1);
-            //当前实例中获取call的当前节点属性
-            Field curField = field.getType().getDeclaredField(curNode);
-            //创建出下一节点实例
-            Object nextInstance = curField.getType().newInstance();
-            curField.setAccessible(true);
-            //如果是第一次递归，则先把当前属性创建出一个实例，并建立关联，再将这个实例与下一个实例相关联
-            if(count == 0){
-                Object thisInstance = field.getType().newInstance();
-                field.set(instance,thisInstance);
-                curField.set(thisInstance,nextInstance);
+        if(StringUtil.isNotBlank(excelField.call())){
+            Object o;
+            //如果该属性为空，则new一个并建立关联
+            if(field.get(instance) == null){
+                o = field.getType().newInstance();
+                field.set(instance,o);
             }else{
-                //否则将当前实例直接关联
-                curField.set(instance,nextInstance);
+                o = field.get(instance);
             }
-            //记录递归次数
-            count++;
-            this.recursion(curField,excelField,nextNode,cell,nextInstance,count);
-        }else {
-            //满足递归退出条件：所有节点实例都创建完毕
-            Field curField = field.getType().getDeclaredField(node);
-            curField.setAccessible(true);
-            //如果使用了callMethod属性
-            if(StringUtil.isNotBlank(excelField.callMethod())){
-                //如果没有递归，需要让原字段与处理后的对象实例建立关系
-                if(count == 0){
-                    Object originalInstance = field.getType().newInstance();
-                    Object thisInstance = curField.getType().newInstance();
-                    Method callMethod = curField.getType().getMethod(excelField.callMethod(), excelField.callClass());
-                    this.invoke(callMethod,excelField,cell,thisInstance);
-                    curField.set(originalInstance,thisInstance);
-                    field.set(instance,originalInstance);
-                }else {
-                    Object thisInstance = curField.getType().newInstance();
-                    Method callMethod = curField.getType().getMethod(excelField.callMethod(), excelField.callClass());
-                    this.invoke(callMethod,excelField,cell,thisInstance);
-                    curField.set(instance,thisInstance);
-                }
-            }else{
-                //如果没有递归，需要让原字段与处理后的对象实例建立关系
-                if(count == 0){
-                    Object thisInstance = field.getType().newInstance();
-                    this.setValue(curField,excelField,cell,thisInstance);
-                    field.set(instance,thisInstance);
-                }else{
-                    this.setValue(curField,excelField,cell,instance);
-                }
-            }
+            this.recursionSet(o,excelField,null,cell);
+        }else{
+            this.invokeCallMethod(field,excelField,cell,instance);
         }
-        return instance;
     }
 
     /**
@@ -387,62 +314,93 @@ public class ExcelImport<T> {
      * @return void
      * 设值
      */
-    private void setMethodValue(Method method,ExcelField excelField,Cell cell,Object t)
-            throws InvocationTargetException, IllegalAccessException, ParseException, NoSuchMethodException, InstantiationException, NoSuchFieldException {
+    private void setMethodValue(Method method,ExcelField excelField,Cell cell,Object t) throws InvocationTargetException,
+            IllegalAccessException, ParseException, NoSuchMethodException, InstantiationException, NoSuchFieldException {
         //是否使用call属性
-        if(StringUtil.isNotBlank(excelField.call())){
+        if(StringUtil.isNotBlank(excelField.call())) {
             //获取方法参数列表第一个参数类型
-            Class<?> arg = method.getParameterTypes()[0];
-            //分隔call节点
-            int index = excelField.call().indexOf(ExcelConfig.CALL_SEPARATOR);
-            Field field;
-            //判断是否需要递归
-            if(index != -1){
-                //如果使用了callMethod属性,则把call节点取出，从方法参数实体中获取field
-                field = arg.getDeclaredField(excelField.call().substring(0, index));
-                Object thisInstance = field.getType().newInstance();
-                String nextNode = excelField.call().substring(index+1);
-                //递归
-                Object instance = this.recursion(field, excelField, nextNode, cell, thisInstance, 0);
-                //判断是否引用本身类型
-                if(instance.getClass() != arg){
-                    //创建方法中的参数实例，建立关联
-                    Object parameter = arg.newInstance();
-                    field.setAccessible(true);
-                    //递归后返回的实例set至实体中
-                    field.set(parameter,instance);
-                    method.invoke(t,parameter);
-                }else{
-                    method.invoke(t,instance);
-                }
-            }else {
-                if(StringUtil.isNotBlank(excelField.callMethod())){
-                    //如果使用了callMethod属性,则把call节点取出，从方法参数实体中获取field
-                    field = arg.getDeclaredField(excelField.call());
-                    field.setAccessible(true);
-                    Object thisInstance = field.getType().newInstance();
-                    Method targetMethod = field.getType().getMethod(excelField.callMethod(), excelField.callClass());
-                    this.invoke(targetMethod,excelField,cell,thisInstance);
-                    //创建方法中的参数实例，建立关联
-                    Object parameter = arg.newInstance();
-                    field.set(parameter,thisInstance);
-                    method.invoke(t,parameter);
-                }else{
-                    Object parameter = arg.newInstance();
-                    field = arg.getDeclaredField(excelField.call());
-                    field.setAccessible(true);
-                    this.setValue(field,excelField,cell,parameter);
-                    method.invoke(t,parameter);
-                }
+            Object parameter = method.getParameterTypes()[0].newInstance();
+            this.recursionSet(parameter,excelField,null,cell);
+            method.invoke(t,parameter);
+        }else{
+            if(StringUtil.isNotBlank(excelField.callMethod())){
+                //获取方法参数列表第一个参数类型
+                Object parameter = method.getParameterTypes()[0].newInstance();
+                Method callMethod = parameter.getClass().getDeclaredMethod(excelField.callMethod(), excelField.callClass());
+                this.invoke(callMethod,excelField,cell,parameter);
+                method.invoke(t,parameter);
+            }else{
+                this.invoke(method,excelField,cell,t);
             }
-        }else if(StringUtil.isNotBlank(excelField.callMethod())){
-            //如果使用了callMethod属性
-            Object target = method.getParameterTypes()[0].newInstance();
-            Method targetMethod = target.getClass().getMethod(excelField.callMethod(), excelField.callClass());
-            this.invoke(targetMethod,excelField,cell,target);
-            method.invoke(t,target);
-        }else {
-            this.invoke(method,excelField,cell,t);
+        }
+    }
+
+    /**
+    * @author Jason
+    * @date 2020/4/29 10:07
+    * @params [instance, excelField, node, cell]
+    * 递归设值
+    * @return java.lang.Object
+    */
+    private Object recursionSet(Object instance,ExcelField excelField,String node,Cell cell) throws NoSuchFieldException,
+            IllegalAccessException, ParseException, InstantiationException, NoSuchMethodException, InvocationTargetException {
+        if(node == null){
+            node = excelField.call();
+        }
+        if(instance == null){
+            return null;
+        }
+        //层级调用
+        int index = node.indexOf(ExcelConfig.CALL_SEPARATOR);
+        //满足递归条件
+        if(index != -1){
+            //节点拆分
+            String curNode = node.substring(0,index);
+            String nextNode = node.substring(index+1);
+            //当前实例中获取call的当前节点属性
+            Field curField = instance.getClass().getDeclaredField(curNode);
+            curField.setAccessible(true);
+            Object curInstance;
+            //如果该属性为空，则new一个并建立关联
+            if(curField.get(instance) == null){
+                curInstance = curField.getType().newInstance();
+                curField.set(instance,curInstance);
+            }else{
+                curInstance = curField.get(instance);
+            }
+            return this.recursionSet(curInstance,excelField,nextNode,cell);
+        }else{
+            Field curField = instance.getClass().getDeclaredField(node);
+            curField.setAccessible(true);
+            this.invokeCallMethod(curField,excelField,cell,instance);
+        }
+        return instance;
+    }
+
+    /**
+    * @author Jason
+    * @date 2020/4/29 10:04
+    * @params [field, excelField, cell, instance]
+    * 过滤是否使用callMethod属性
+    * @return void
+    */
+    private void invokeCallMethod(Field field,ExcelField excelField,Cell cell,Object instance) throws ParseException,
+            IllegalAccessException, InstantiationException, NoSuchMethodException, InvocationTargetException {
+        field.setAccessible(true);
+        //如果使用callMethod属性,取出并调用
+        if(StringUtil.isNotBlank(excelField.callMethod())){
+            Object curInstance;
+            if(field.get(instance) == null){
+                curInstance = field.getType().newInstance();
+                field.set(instance,curInstance);
+            }else{
+                curInstance = field.get(instance);
+            }
+            //调用
+            Method callMethod = field.getType().getDeclaredMethod(excelField.callMethod(), excelField.callClass());
+            this.invoke(callMethod,excelField,cell,curInstance);
+        }else{
+            this.setValue(field,excelField,cell,instance);
         }
     }
 

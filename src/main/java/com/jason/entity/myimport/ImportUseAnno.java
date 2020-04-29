@@ -36,7 +36,7 @@ public class ImportUseAnno extends DataEntity<ImportUseAnno> {
 
     private String template;
 
-    @ExcelField(title = "parent",call = "classes.name")
+    @ExcelField(title = "parent",call = "name")
     private Student student;
 
     private Date date;
@@ -124,7 +124,7 @@ public class ImportUseAnno extends DataEntity<ImportUseAnno> {
         return parent;
     }
 
-    @ExcelField(title = "parent",call = "parent.student", callMethod = "setName",
+    @ExcelField(title = "parent", call = "student.classes" , callMethod = "setId",
             useTemplate = true,templateNameKey = "parent")
     public ImportUseAnno setParent(ImportUseAnno parent) {
         this.parent = parent;
