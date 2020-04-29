@@ -28,6 +28,9 @@ public class Student implements Serializable{
     }
 
     public Student setName(String name) {
+        if("张3".equals(name)){
+            name = "张三";
+        }
         this.name = name;
         return this;
     }

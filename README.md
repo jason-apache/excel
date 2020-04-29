@@ -7,6 +7,14 @@
 
 针对导入导出一些细节性的说明：
 
-import支持字段和set方法的注解，export支持字段和get方法的注解
+import、export不支持单元格合并
 
-export不支持单元格合并
+import和export均支持字段和方法的注解，但存在一些差异，在方法上加注解时，import调用set方法，export调用get方法
+
+import的注解中（call、callMethod）属性支持方法和字段
+
+export的注解中（call、callMethod）属性仅支持字段，export的方法上面加call本身就是无意义的
+
+在字段上面加注解时，可以同时满足导入与导出，在方法上加注解时，需要指定isImport = true 或者 isImport = false
+
+import调用顺序：先执行字段上的注解，再执行方法

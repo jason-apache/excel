@@ -104,7 +104,7 @@ public class ExcelExport<T> {
         annotationMapping = new HashMap<>(fields.length + methods.length);
         for (Field field : fields) {
             ExcelField excelField = field.getAnnotation(ExcelField.class);
-            if (null != excelField && !excelField.isImport() && StringUtil.isNotBlank(excelField.title())) {
+            if (null != excelField && StringUtil.isNotBlank(excelField.title())) {
                 annotationList.add(excelField);
                 annotationMapping.put(excelField, field);
             }
@@ -439,8 +439,8 @@ public class ExcelExport<T> {
             int currentElement = 0;
             for(T t : collection){
                 try {
-                    this.outPutData(t,headRow);
                     currentElement++;
+                    this.outPutData(t,headRow);
                 }catch (Exception e){
                     errorMsg.append("错误信息：第").append(currentElement).append("行，").append(e.getMessage()).append("\r\n");
                 }
@@ -536,8 +536,8 @@ public class ExcelExport<T> {
             Map<String, String> map = template.get(excelField.templateNameKey());
             if(null != map){
                 cell.setCellValue(map.get(object.toString()));
-                return;
             }
+            return;
         }
 
         if(object instanceof String){
@@ -567,6 +567,7 @@ public class ExcelExport<T> {
             SimpleDateFormat format = new SimpleDateFormat(ExcelConfig.DATE_EXPORT_FORMAT);
             cell.setCellValue(format.format(object));
         }else{
+            //不属于上面中的类型，则调用toString方法
             cell.setCellValue(object.toString());
         }
     }

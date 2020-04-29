@@ -91,7 +91,7 @@ public class ExcelImport<T> {
         }
         this.clazz = clazz;
         this.is = is;
-        this.initMethods();
+        this.initMethod();
     }
 
     /**
@@ -153,23 +153,16 @@ public class ExcelImport<T> {
      * 初始化方法
      * @return void
      */
-    private void initMethods(){
+    private void initMethod(){
 
         Field[] fields = clazz.getDeclaredFields();
         Method[] methods = clazz.getDeclaredMethods();
         annotationList = new ArrayList<>(fields.length + methods.length);
         annotationMapping = new HashMap<>(fields.length + methods.length);
         //自动根据字段名映射
-        for (Method method : methods) {
-            ExcelField excelField = method.getAnnotation(ExcelField.class);
-            if (null != excelField && excelField.isImport() && StringUtil.isNotBlank(excelField.title())) {
-                annotationList.add(excelField);
-                annotationMapping.put(excelField, method);
-            }
-        }
         for (Field field : fields) {
             ExcelField excelField = field.getAnnotation(ExcelField.class);
-            if (null != excelField && excelField.isImport() && StringUtil.isNotBlank(excelField.title())) {
+            if (null != excelField && StringUtil.isNotBlank(excelField.title())) {
                 annotationList.add(excelField);
                 annotationMapping.put(excelField, field);
             } else {
@@ -179,6 +172,13 @@ public class ExcelImport<T> {
                     }
                     fieldsSet.add(field);
                 }
+            }
+        }
+        for (Method method : methods) {
+            ExcelField excelField = method.getAnnotation(ExcelField.class);
+            if (null != excelField && excelField.isImport() && StringUtil.isNotBlank(excelField.title())) {
+                annotationList.add(excelField);
+                annotationMapping.put(excelField, method);
             }
         }
     }
@@ -248,7 +248,7 @@ public class ExcelImport<T> {
             this.setValue(o,excelField,cell,t);
          }
         //是否自动根据参数名映射 默认开启
-        if(autoMappingByFieldName){
+        if(autoMappingByFieldName && null != fieldsSet){
             for(Field f : fieldsSet){
                 f.setAccessible(true);
                 Integer index = titleMapping.get(f.getName());
@@ -422,8 +422,8 @@ public class ExcelImport<T> {
             if(null != map){
                 String val = map.get(cell.toString());
                 method.invoke(instance,val);
-                return;
             }
+            return;
         }
         //检测excel单元格是否为数字类型
         boolean numberFlag = cell.getCellTypeEnum() == CellType.NUMERIC;
@@ -491,8 +491,8 @@ public class ExcelImport<T> {
             if(null != map){
                 String val = map.get(cell.toString());
                 field.set(instance,val);
-                return;
             }
+            return;
         }
         //检测excel单元格是否为数字类型
         boolean numberFlag = cell.getCellTypeEnum() == CellType.NUMERIC;
@@ -523,7 +523,7 @@ public class ExcelImport<T> {
         }else if(field.getType() == Integer.class){
             field.set(instance,new Double(cell.toString()).intValue());
         }else if(field.getType() == Double.class){
-            field.set(instance,cell.toString());
+            field.set(instance,Double.parseDouble(cell.toString()));
         }else if(field.getType() == Long.class){
             field.set(instance,new Double(cell.toString()).longValue());
         }else if(field.getType() == Float.class){

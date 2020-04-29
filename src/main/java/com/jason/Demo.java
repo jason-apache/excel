@@ -1,5 +1,6 @@
 package com.jason;
 
+import com.jason.entity.GeneralExcel;
 import com.jason.entity.demo.Classes;
 import com.jason.entity.demo.Student;
 import com.jason.entity.myexport.ExportNoUseAnno;
@@ -33,6 +34,7 @@ public class Demo {
     private ClassesService classesService = new ClassesService();
     private static List<ExportNoUseAnno> noUseAnnoList = new ArrayList<>(size);
     private static List<ExportUseAnno> useAnnoList = new ArrayList<>(size);
+    private static List<GeneralExcel> generalExcelList = new ArrayList<>(size);
     private static String[] headRow;
 
     //初始化测试数据
@@ -81,6 +83,30 @@ public class Demo {
             parent.setStudent(student);
             useAnno.setParent(parent);
             useAnnoList.add(useAnno);
+
+            GeneralExcel gen = new GeneralExcel();
+            if(i%3 == 0){
+                gen.setaBoolean(true);
+            }else{
+                gen.setaBoolean(false);
+            }
+            gen.setaByte((byte) i);
+            gen.setaShort((short)j);
+            gen.setaLong((long) 141);
+            gen.setaDouble(1.41);
+            gen.setaFloat((float) 2.23);
+            gen.setaInteger(i);
+            gen.setaCharacter('A');
+            gen.setDictData1(i+"");
+            gen.setDictData2(j+"");
+            gen.setDate(new Date());
+            GeneralExcel p1 = new GeneralExcel().setDictData1(i + "");
+            Student s1 = new Student().setName("张" + i);
+            s1.setClasses(new Classes().setName("141班"));
+            p1.setStudent(student);
+            gen.setStudent(s1);
+            gen.setParent(p1);
+            generalExcelList.add(gen);
         }
     }
 
@@ -92,6 +118,30 @@ public class Demo {
         System.out.println(sampleMapper.selectObject("select * from classes"));
         System.out.println(sampleMapper.selectSingleColumnStringList("select name from classes"));
         System.out.println(sampleMapper.selectSingleObject("select * from classes where id = 1"));
+    }
+
+    @Test
+    public void generalExcel() throws IOException {
+        //导出模拟数据
+        ExcelExport<GeneralExcel> genExport = new ExcelExport<>(GeneralExcel.class, "通用导入导出");
+        genExport.putTemplate("default",ExcelConfig.getTemplateTitle());
+        Map<String, String> template1 = new HashMap<>(1);
+        template1.put("1","字典数据2");
+        genExport.putTemplate("第二个",template1);
+        String e1 = genExport.outPutData(generalExcelList);
+        genExport.writeToFile("C:/Users/mh262/Desktop/general.xlsx");
+        System.out.println(e1);
+
+        //导入
+        File file = new File("C:/Users/mh262/Desktop/general.xlsx");
+        ExcelImport<GeneralExcel> genImport = new ExcelImport<>(new FileInputStream(file),GeneralExcel.class);
+        Map<String, String> template2 = new HashMap<>(1);
+        genImport.putTemplate("default",ExcelConfig.getTemplateCode()).putTemplate("第二个",template2);
+        template2.put("字典数据2","1");
+        ArrayList<GeneralExcel> list = new ArrayList<>();
+        String e2 = genImport.getObjects(list);
+        System.out.println(list);
+        System.out.println(e2);
     }
 
     @Test
