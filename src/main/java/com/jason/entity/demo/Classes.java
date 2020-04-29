@@ -23,6 +23,7 @@ public class Classes extends DataEntity<Classes> {
     }
 
     public String getName() {
+        System.out.println("我被执行了");
         return name;
     }
 

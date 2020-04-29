@@ -28,6 +28,7 @@ public class Student implements Serializable{
     }
 
     public Student setName(String name) {
+        System.out.println("我被执行了");
         this.name = name;
         return this;
     }

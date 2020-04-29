@@ -293,7 +293,8 @@ public class ExcelExport<T> {
      * @params [collection]
      * @return com.jason.util.ExcelExport<T>
      */
-    public ExcelExport<T> outPutData(T t) throws IllegalAccessException, InvocationTargetException {
+    public ExcelExport<T> outPutData(T t) throws IllegalAccessException,
+            InvocationTargetException, NoSuchFieldException, NoSuchMethodException {
 
         //创建首行
         if(!hasHeadRow || curRow == 0){
@@ -336,7 +337,8 @@ public class ExcelExport<T> {
     * @return java.lang.Object
     * 获取值
     */
-    private Object getVal(ExcelField excelField,Object o,T t) throws InvocationTargetException, IllegalAccessException {
+    private Object getVal(ExcelField excelField,Object o,T t) throws InvocationTargetException,
+            IllegalAccessException, NoSuchFieldException, NoSuchMethodException {
         if(null == excelField || null == o){
             return null;
         }
@@ -356,7 +358,8 @@ public class ExcelExport<T> {
     * @return java.lang.Object
     * 获取值
     */
-    private Object getMethodVal(ExcelField excelField,Method method,T t) throws InvocationTargetException, IllegalAccessException {
+    private Object getMethodVal(ExcelField excelField,Method method,T t) throws InvocationTargetException,
+            IllegalAccessException {
         return method.invoke(t);
     }
 
@@ -367,9 +370,60 @@ public class ExcelExport<T> {
     * @return java.lang.Object
     * 获取值
     */
-    private Object getFieldVal(ExcelField excelField,Field field,T t) throws IllegalAccessException {
-        field.setAccessible(true);
-        return field.get(t);
+    private Object getFieldVal(ExcelField excelField,Field field,T t) throws IllegalAccessException,
+            NoSuchFieldException, NoSuchMethodException, InvocationTargetException {
+        if(StringUtil.isNotBlank(excelField.call())){
+            //把当前属性get出来直接丢入递归
+            field.setAccessible(true);
+            Object o = field.get(t);
+            return this.recursionGet(o,excelField,null);
+        }else {
+            field.setAccessible(true);
+            return field.get(t);
+        }
+    }
+
+    /**
+    * @author Jason
+    * @date 2020/4/28 9:34
+    * @params [instance, excelField, node]
+    * 递归获取值
+    * @return java.lang.Object
+    */
+    private Object recursionGet(Object instance,ExcelField excelField,String node)
+            throws NoSuchFieldException, IllegalAccessException, NoSuchMethodException, InvocationTargetException {
+        if(node == null){
+            node = excelField.call();
+        }
+        if(instance == null){
+            return null;
+        }
+        int index = node.indexOf(ExcelConfig.CALL_SEPARATOR);
+        if(index != -1){
+            //节点拆分
+            String curNode = node.substring(0,index);
+            String nextNode = node.substring(index+1);
+            //获取当前节点的字段
+            Field curField = instance.getClass().getDeclaredField(curNode);
+            curField.setAccessible(true);
+            //取出，丢入递归
+            Object curInstance = curField.get(instance);
+            return this.recursionGet(curInstance,excelField,nextNode);
+        }else{
+            Field curField = instance.getClass().getDeclaredField(node);
+            curField.setAccessible(true);
+            //判断是否使用callMethod属性
+            if(StringUtil.isNotBlank(excelField.callMethod())){
+                //先把当前属性从实例中取出
+                Object curInstance = curField.get(instance);
+                //调用callMethod
+                Method callMethod = curInstance.getClass().getDeclaredMethod(excelField.callMethod());
+                return callMethod.invoke(curInstance);
+            }else{
+                //取出该属性直接返回
+                return curField.get(instance);
+            }
+        }
     }
 
     /**
@@ -402,7 +456,8 @@ public class ExcelExport<T> {
     * 不使用注解
     * @return com.jason.util.ExcelExport<T>
     */
-    public ExcelExport<T> outPutData(T t, String[] headRow) throws InvocationTargetException, IllegalAccessException {
+    public ExcelExport<T> outPutData(T t, String[] headRow) throws InvocationTargetException,
+            IllegalAccessException, NoSuchFieldException, NoSuchMethodException {
         this.useAnnotation = false;
         if(!hasHeadRow || curRow == 0){
             this.createHeadRow(headRow);
@@ -511,6 +566,8 @@ public class ExcelExport<T> {
         }else if(object instanceof Date){
             SimpleDateFormat format = new SimpleDateFormat(ExcelConfig.DATE_EXPORT_FORMAT);
             cell.setCellValue(format.format(object));
+        }else{
+            cell.setCellValue(object.toString());
         }
     }
 

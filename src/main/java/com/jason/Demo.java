@@ -1,10 +1,12 @@
 package com.jason;
 
+import com.jason.entity.demo.Classes;
+import com.jason.entity.demo.Student;
 import com.jason.entity.myexport.ExportNoUseAnno;
 import com.jason.entity.myexport.ExportUseAnno;
 import com.jason.entity.myimport.ImportNoUseAnno;
 import com.jason.entity.myimport.ImportUseAnno;
-import com.jason.mapper.SampleMapper;
+import com.jason.mapper.SimpleMapper;
 import com.jason.service.ClassesService;
 import com.jason.util.ExcelConfig;
 import com.jason.util.ExcelExport;
@@ -73,14 +75,18 @@ public class Demo {
             useAnno.setaCharacter('A');
             useAnno.setTemplate(i+"");
             useAnno.setDate(new Date());
-            useAnno.setParent(new ExportUseAnno().setTemplate(i+""));
+            ExportUseAnno parent = new ExportUseAnno().setTemplate(i + "");
+            Student student = new Student().setName("张" + i);
+            student.setClasses(new Classes().setName("141班"));
+            parent.setStudent(student);
+            useAnno.setParent(parent);
             useAnnoList.add(useAnno);
         }
     }
 
     @Test
     public void test() throws IOException, NoSuchMethodException, ParseException, InstantiationException, IllegalAccessException, InvocationTargetException, NoSuchFieldException {
-        SampleMapper sampleMapper = SqlSessionFactoryUtil.getMapper(SampleMapper.class);
+        SimpleMapper sampleMapper = SqlSessionFactoryUtil.getMapper(SimpleMapper.class);
         sampleMapper.DML("delete from classes where id = 123456");
         System.out.println(sampleMapper.getSingleColumnString("select name from classes where id = 1"));
         System.out.println(sampleMapper.selectObject("select * from classes"));

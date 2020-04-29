@@ -2,6 +2,7 @@ package com.jason.entity.myexport;
 
 import com.jason.anno.ExcelField;
 import com.jason.base.DataEntity;
+import com.jason.entity.demo.Student;
 
 import java.util.Date;
 
@@ -37,9 +38,13 @@ public class ExportUseAnno extends DataEntity<ExportUseAnno> {
     @ExcelField(title = "Char",isImport = false,sort = 7)
     private Character aCharacter;
 
+    @ExcelField(title = "parent",call = "student.classes",callMethod = "getName",
+            isImport = false,sort = 8)
     private ExportUseAnno parent;
 
     private String template;
+
+    private Student student;
 
     @ExcelField(title = "date",isImport = false,sort = 10)
     private Date date;
@@ -116,9 +121,8 @@ public class ExportUseAnno extends DataEntity<ExportUseAnno> {
         return this;
     }
 
-    @ExcelField(title = "parent",isImport = false,sort = 8)
-    public String getParent() {
-        return parent.template;
+    public ExportUseAnno getParent() {
+        return parent;
     }
 
     public ExportUseAnno setParent(ExportUseAnno parent) {
@@ -142,6 +146,15 @@ public class ExportUseAnno extends DataEntity<ExportUseAnno> {
 
     public ExportUseAnno setDate(Date date) {
         this.date = date;
+        return this;
+    }
+
+    public Student getStudent() {
+        return student;
+    }
+
+    public ExportUseAnno setStudent(Student student) {
+        this.student = student;
         return this;
     }
 }
