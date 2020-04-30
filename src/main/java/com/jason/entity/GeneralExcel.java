@@ -129,7 +129,8 @@ public class GeneralExcel extends DataEntity<GeneralExcel> {
         return parent;
     }
 
-    @ExcelField(title = "parent",isImport = true,call = "student.name")
+    @ExcelField(title = "parent",isImport = true,
+            call = "student.classes",callMethod = "setName",callClass = String.class)
     public GeneralExcel setParent(GeneralExcel parent) {
         this.parent = parent;
         return this;

@@ -18,6 +18,12 @@ public class ExcelConfig {
     public final static String DATE_EXPORT_FORMAT = "yyyy-MM-dd";
 
     /**
+     * set get 方法前缀
+     */
+    public final static String SET_PREFIX = "set";
+    public final static String GET_PREFIX = "get";
+
+    /**
      * call分隔符
      */
     public final static String CALL_SEPARATOR = ".";
