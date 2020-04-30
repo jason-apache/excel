@@ -112,10 +112,8 @@ public class ExcelExport<T> {
         for (Method method : methods) {
             ExcelField excelField = method.getAnnotation(ExcelField.class);
             if (null != excelField && !excelField.isImport() && StringUtil.isNotBlank(excelField.title())) {
-                if(method.getName().contains(ExcelConfig.GET_PREFIX)){
-                    annotationList.add(excelField);
-                    annotationMapping.put(excelField, method);
-                }
+                annotationList.add(excelField);
+                annotationMapping.put(excelField, method);
             }
         }
         //排序
