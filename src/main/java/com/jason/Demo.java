@@ -111,13 +111,14 @@ public class Demo {
     }
 
     @Test
-    public void test() throws IOException, NoSuchMethodException, ParseException, InstantiationException, IllegalAccessException, InvocationTargetException, NoSuchFieldException {
-        SimpleMapper sampleMapper = SqlSessionFactoryUtil.getMapper(SimpleMapper.class);
-        sampleMapper.DML("delete from classes where id = 123456");
-        System.out.println(sampleMapper.getSingleColumnString("select name from classes where id = 1"));
-        System.out.println(sampleMapper.selectObject("select * from classes"));
-        System.out.println(sampleMapper.selectSingleColumnStringList("select name from classes"));
-        System.out.println(sampleMapper.selectSingleObject("select * from classes where id = 1"));
+    public void test() {
+        SimpleMapper simpleMapper = SqlSessionFactoryUtil.getMapper(SimpleMapper.class);
+        simpleMapper.DML("delete from classes where id = 123456");
+        System.out.println(simpleMapper.getSingleColumnString("select name from classes where id = 1"));
+        System.out.println(simpleMapper.selectObject("select * from classes"));
+        System.out.println(simpleMapper.selectSingleColumnStringList("select name from classes"));
+        System.out.println(simpleMapper.selectSingleObject("select * from classes where id = 1"));
+        System.out.println(simpleMapper.selectObject("select * from student"));
     }
 
     @Test
