@@ -1,9 +1,9 @@
 package com.jason.util;
 
 import com.jason.anno.ExcelField;
+import org.apache.poi.hssf.usermodel.HSSFWorkbook;
 import org.apache.poi.ss.usermodel.*;
 import org.apache.poi.ss.util.CellRangeAddress;
-import org.apache.poi.xssf.streaming.SXSSFSheet;
 import org.apache.poi.xssf.streaming.SXSSFWorkbook;
 
 import javax.servlet.http.HttpServletResponse;
@@ -31,11 +31,11 @@ public class ExcelExport<T> {
     /**
      * 工作簿对象
      */
-    private SXSSFWorkbook sxssfWorkbook;
+    private Workbook workbook;
     /**
      *工作簿对象
      */
-    private SXSSFSheet sheet;
+    private Sheet sheet;
     /**
      * 标题行
      */
@@ -80,11 +80,45 @@ public class ExcelExport<T> {
      *样式key
      */
     private String styleKey = ExcelConfig.Style.DEFAULT_STYLE;
+    /**
+     * 使用xls后缀，此种方式的局限就是导出的行数至多为65535行，超出65536条后系统就会报错。
+     */
+    private boolean useHSSF = false;
+    /**
+     * 使用xlsx后缀，没有65535行限制
+     */
+    private boolean useSXSSF = true;
 
+    /**
+    * @author Jason
+    * @date 2020/5/19 13:08
+    * @params [clazz, title]
+    * 构造方法，默认使用SXSSFworkbook对象
+    * @return
+    */
     public ExcelExport(Class<T> clazz,String title){
+        this(clazz,title,true);
+    }
+
+    /**
+    * @author Jason
+    * @date 2020/5/19 13:09
+    * @params [clazz, title, useSXSSF]
+    * 构造方法，设置工作簿类型
+    * @return
+    */
+    public ExcelExport(Class<T> clazz,String title,boolean useSXSSF){
+        this.useSXSSF = useSXSSF;
+        this.useHSSF = !useSXSSF;
+        if(useSXSSF){
+            this.workbook = new SXSSFWorkbook(ExcelConfig.EXPORT_WORK_SIZE);
+        }else{
+            this.workbook = new HSSFWorkbook();
+        }
+        this.sheet = workbook.createSheet(ExcelConfig.SHEET_NAME);
         this.clazz = clazz;
         this.title = title;
-        init();
+        this.init();
     }
 
     /**
@@ -124,9 +158,6 @@ public class ExcelExport<T> {
         for(int i = 0 ; i < annotationList.size() ; i ++ ){
             headRow[i] = annotationList.get(i).title();
         }
-
-        this.sxssfWorkbook = new SXSSFWorkbook(ExcelConfig.EXPORT_WORK_SIZE);
-        this.sheet = sxssfWorkbook.createSheet(ExcelConfig.SHEET_NAME);
     }
 
     /**
@@ -138,7 +169,7 @@ public class ExcelExport<T> {
     */
     public void defaultStyles(){
         Map<String, CellStyle> styles = new HashMap<>(3);
-        CellStyle style = sxssfWorkbook.createCellStyle();
+        CellStyle style = workbook.createCellStyle();
 
         //设置headRow样式
         style.setAlignment(HorizontalAlignment.CENTER);
@@ -151,7 +182,7 @@ public class ExcelExport<T> {
         style.setTopBorderColor(IndexedColors.GREY_50_PERCENT.getIndex());
         style.setBorderBottom(BorderStyle.THIN);
         style.setBottomBorderColor(IndexedColors.GREY_50_PERCENT.getIndex());
-        Font headRowFont = sxssfWorkbook.createFont();
+        Font headRowFont = workbook.createFont();
         headRowFont.setFontName(ExcelConfig.Style.FONT_NAME);
         headRowFont.setFontHeightInPoints(ExcelConfig.Style.FONT_HEAD_SIZE);
         headRowFont.setBold(true);
@@ -159,7 +190,7 @@ public class ExcelExport<T> {
         styles.put(ExcelConfig.Style.HEAD_ROW, style);
 
         //设置标题样式
-        style = sxssfWorkbook.createCellStyle();
+        style = workbook.createCellStyle();
         style.setAlignment(HorizontalAlignment.CENTER);
         style.setVerticalAlignment(VerticalAlignment.CENTER);
         style.setBorderRight(BorderStyle.THIN);
@@ -170,7 +201,7 @@ public class ExcelExport<T> {
         style.setTopBorderColor(IndexedColors.GREY_50_PERCENT.getIndex());
         style.setBorderBottom(BorderStyle.THIN);
         style.setBottomBorderColor(IndexedColors.GREY_50_PERCENT.getIndex());
-        Font titleFont = sxssfWorkbook.createFont();
+        Font titleFont = workbook.createFont();
         titleFont.setFontName(ExcelConfig.Style.FONT_NAME);
         titleFont.setFontHeightInPoints(ExcelConfig.Style.FONT_TITLE_SIZE);
         titleFont.setBold(true);
@@ -178,7 +209,7 @@ public class ExcelExport<T> {
         styles.put(ExcelConfig.Style.TITLE, style);
 
         //设置普通单元格样式
-        style = sxssfWorkbook.createCellStyle();
+        style = workbook.createCellStyle();
         style.setAlignment(HorizontalAlignment.LEFT);
         style.setBorderRight(BorderStyle.THIN);
         style.setRightBorderColor(IndexedColors.GREY_50_PERCENT.getIndex());
@@ -188,7 +219,7 @@ public class ExcelExport<T> {
         style.setTopBorderColor(IndexedColors.GREY_50_PERCENT.getIndex());
         style.setBorderBottom(BorderStyle.THIN);
         style.setBottomBorderColor(IndexedColors.GREY_50_PERCENT.getIndex());
-        Font dataFont = sxssfWorkbook.createFont();
+        Font dataFont = workbook.createFont();
         dataFont.setFontName(ExcelConfig.Style.FONT_NAME);
         dataFont.setFontHeightInPoints(ExcelConfig.Style.FONT_CELL_SIZE);
         style.setFont(dataFont);
@@ -216,9 +247,9 @@ public class ExcelExport<T> {
             Row row = this.createRow();
             Cell cell = row.createCell(0);
             cell.setCellValue(this.title);
-            cell.setCellStyle(styles.get(ExcelConfig.Style.TITLE));
+            this.setCellStyle(cell,styles.get(ExcelConfig.Style.TITLE));
             CellRangeAddress region = new CellRangeAddress(0, 0, 0, headRow.length-1);
-            row.createCell(headRow.length-1).setCellStyle(styles.get(ExcelConfig.Style.DEFAULT_STYLE));
+            this.setCellStyle(row.createCell(headRow.length-1),styles.get(ExcelConfig.Style.DEFAULT_STYLE));
             sheet.addMergedRegion(region);
         }
         Row row = this.createRow();
@@ -228,7 +259,7 @@ public class ExcelExport<T> {
             if (head != null) {
                 Cell cell = row.createCell(curCellNum++);
                 cell.setCellValue(head);
-                cell.setCellStyle(styles.get(ExcelConfig.Style.HEAD_ROW));
+                this.setCellStyle(cell,styles.get(ExcelConfig.Style.HEAD_ROW));
                 //下面这行代码容易引起文件受损
                 //this.sheet.setColumnWidth((short)1,head.getBytes().length * 2 * 256);
                 if(sheet.getColumnWidth(i) < ExcelConfig.Style.CELL_MIN_WIDTH){
@@ -238,6 +269,21 @@ public class ExcelExport<T> {
         }
         this.headRow = headRow;
         hasHeadRow = true;
+    }
+
+    /**
+    * @author Jason
+    * @date 2020/5/19 13:08
+    * @params [cell, cellStyle]
+    * 根据工作簿不同类型设置样式
+    * @return void
+    */
+    private void setCellStyle(Cell cell,CellStyle cellStyle){
+        if(this.useSXSSF){
+            cell.setCellStyle(cellStyle);
+        }else if(this.useHSSF){
+            cell.getCellStyle().cloneStyleFrom(cellStyle);
+        }
     }
 
     /**
@@ -473,7 +519,7 @@ public class ExcelExport<T> {
      * @return com.jason.util.ExcelExport<T>
      */
     public ExcelExport<T> write(OutputStream os) throws IOException {
-        sxssfWorkbook.write(os);
+        workbook.write(os);
         return this;
     }
 
@@ -527,7 +573,7 @@ public class ExcelExport<T> {
      */
     private void setValue(ExcelField excelField,Cell cell,Object object){
         //设置样式
-        cell.setCellStyle(styles.get(styleKey));
+        this.setCellStyle(cell,styles.get(styleKey));
         if(object == null){
             cell.setCellValue("");
             return;

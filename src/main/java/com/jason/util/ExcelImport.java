@@ -9,7 +9,6 @@ import org.apache.poi.ss.usermodel.Row;
 import org.apache.poi.ss.usermodel.Sheet;
 import org.apache.poi.xssf.usermodel.XSSFWorkbook;
 
-import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.lang.reflect.Field;
@@ -46,10 +45,6 @@ public class ExcelImport<T> {
      *输入流
      */
     private final InputStream is;
-    /**
-     *字节数组，保存流
-     */
-    private byte[] bytes;
 
     private Sheet sheet;
     /**
@@ -80,8 +75,36 @@ public class ExcelImport<T> {
      *模板格式
      */
     private Map<String,Map<String,String>> template;
+    /**
+     * 使用Excel2003以前（包括2003）的版本，扩展名是.xls
+     */
+    private boolean useHSSF = false;
+    /**
+     * 使用Excel2007后的版本，扩展名是.xlsx
+     */
+    private boolean useXSSF = true;
 
+    /**
+    * @author Jason
+    * @date 2020/5/19 11:03
+    * @params [is, clazz]
+    * 构造方法，默认使用XSSFworkbook对象
+    * @return
+    */
     public ExcelImport(InputStream is,Class<T> clazz){
+        this(is,clazz,true);
+    }
+
+    /**
+    * @author Jason
+    * @date 2020/5/19 11:03
+    * @params [is, clazz, useXSSF]
+    * 构造方法，设置workbook文件格式
+    * @return
+    */
+    public ExcelImport(InputStream is,Class<T> clazz,boolean useXSSF){
+        this.useXSSF = useXSSF;
+        this.useHSSF = !useXSSF;
         ExcelField field = clazz.getAnnotation(ExcelField.class);
         //根据注解中的属性设初值
         if(null != field){
@@ -102,36 +125,21 @@ public class ExcelImport<T> {
      * @return void
      */
     private void init() throws IOException {
-        try {
-            bytes = new byte[is.available()];
-            is.read(bytes);
-            XSSFWorkbook xssfWorkbook = new XSSFWorkbook(new ByteArrayInputStream(bytes));
+        if(this.useXSSF){
+            XSSFWorkbook xssfWorkbook = new XSSFWorkbook(this.is);
             //初始化
             if(StringUtil.isNotBlank(sheetName)){
                 sheet = xssfWorkbook.getSheet(sheetName);
             }else{
                 sheet = xssfWorkbook.getSheetAt(startSheet);
             }
-        }catch (Exception e){
-            System.out.println("格式不匹配");
-            HSSFWorkbook hssfWorkbook = new HSSFWorkbook(new ByteArrayInputStream(bytes));
+        }else if(this.useHSSF){
+            HSSFWorkbook hssfWorkbook = new HSSFWorkbook(this.is);
             //初始化
             if(StringUtil.isNotBlank(sheetName)){
                 sheet = hssfWorkbook.getSheet(sheetName);
             }else{
                 sheet = hssfWorkbook.getSheetAt(startSheet);
-            }
-        }finally {
-            try {
-                is.close();
-            }catch (IOException e1){
-                e1.printStackTrace();
-                try {
-                    Thread.sleep(500);
-                    is.close();
-                }catch (Exception e2){
-                    e1.printStackTrace();
-                }
             }
         }
 
