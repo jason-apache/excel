@@ -28,11 +28,11 @@ public class ExcelImport<T> {
     /**
      * 解析起始行
      */
-    private int startRow;
+    private Integer startRow;
     /**
      * 解析工作簿
      */
-    private int startSheet;
+    private Integer sheetIndex;
     /**
      *工作簿名称
      */
@@ -88,7 +88,7 @@ public class ExcelImport<T> {
     * @author Jason
     * @date 2020/5/19 11:03
     * @params [is, clazz]
-    * 构造方法，默认使用XSSFworkbook对象
+    * 构造方法，默认使用XSSFWorkbook对象
     * @return
     */
     public ExcelImport(InputStream is,Class<T> clazz){
@@ -108,12 +108,74 @@ public class ExcelImport<T> {
         ExcelField field = clazz.getAnnotation(ExcelField.class);
         //根据注解中的属性设初值
         if(null != field){
-            startRow = field.startRow() > 0 ? field.startRow() - 1 : 0;
-            startSheet = field.sheetIndex() > 0 ? field.sheetIndex() - 1 : 0;
-            sheetName = "".equals(field.sheetName().trim()) ? null : field.sheetName();
+            this.startRow = field.startRow() > 0 ? field.startRow() - 1 : 0;
+            this.sheetIndex = field.sheetIndex() > 0 ? field.sheetIndex() - 1 : 0;
+            this.sheetName = field.sheetName();
         }
         this.clazz = clazz;
         this.is = is;
+        this.initMethod();
+    }
+
+    /**
+    * @author Jason
+    * @date 2020/5/25 9:53
+    * @params [is, clazz, sheetIndex, startRow]
+    * 重载构造方法，默认使用XSSFWorkbook对象
+    * @return
+    */
+    public ExcelImport(InputStream is,Class<T> clazz,Integer sheetIndex,Integer startRow){
+        this(is,clazz,sheetIndex,startRow,true);
+    }
+
+    /**
+     * @author Jason
+     * @date 2020/5/25 9:53
+     * @params [is, clazz, sheetIndex, startRow]
+     * 重载构造方法
+     * @return
+     */
+    public ExcelImport(InputStream is,Class<T> clazz,Integer sheetIndex,Integer startRow,boolean useXSSF){
+        this(is,clazz,null,sheetIndex,startRow,useXSSF);
+    }
+
+    /**
+     * @author Jason
+     * @date 2020/5/25 9:53
+     * @params [is, clazz, sheetIndex, startRow]
+     * 重载构造方法，默认使用XSSFWorkbook对象
+     * @return
+     */
+    public ExcelImport(InputStream is,Class<T> clazz,String sheetName,Integer startRow){
+        this(is,clazz,sheetName,startRow,true);
+    }
+
+    /**
+     * @author Jason
+     * @date 2020/5/25 9:53
+     * @params [is, clazz, sheetIndex, startRow]
+     * 重载构造方法
+     * @return
+     */
+    public ExcelImport(InputStream is,Class<T> clazz,String sheetName,Integer startRow,boolean useXSSF){
+        this(is,clazz,sheetName,null,startRow,useXSSF);
+    }
+
+    /**
+     * @author Jason
+     * @date 2020/5/25 9:53
+     * @params [is, clazz, sheetIndex, startRow]
+     * 重载构造方法
+     * @return
+     */
+    public ExcelImport(InputStream is,Class<T> clazz,String sheetName,Integer sheetIndex,Integer startRow,boolean useXSSF){
+        this.is = is;
+        this.clazz = clazz;
+        this.sheetName = sheetName;
+        this.sheetIndex = sheetIndex;
+        this.startRow = startRow;
+        this.useXSSF = useXSSF;
+        this.useHSSF = !useXSSF;
         this.initMethod();
     }
 
@@ -131,7 +193,7 @@ public class ExcelImport<T> {
             if(StringUtil.isNotBlank(sheetName)){
                 sheet = xssfWorkbook.getSheet(sheetName);
             }else{
-                sheet = xssfWorkbook.getSheetAt(startSheet);
+                sheet = xssfWorkbook.getSheetAt(sheetIndex);
             }
         }else if(this.useHSSF){
             HSSFWorkbook hssfWorkbook = new HSSFWorkbook(this.is);
@@ -139,7 +201,7 @@ public class ExcelImport<T> {
             if(StringUtil.isNotBlank(sheetName)){
                 sheet = hssfWorkbook.getSheet(sheetName);
             }else{
-                sheet = hssfWorkbook.getSheetAt(startSheet);
+                sheet = hssfWorkbook.getSheetAt(sheetIndex);
             }
         }
 
@@ -176,7 +238,7 @@ public class ExcelImport<T> {
             } else {
                 if (autoMappingByFieldName) {
                     if (null == fieldsSet) {
-                        fieldsSet = new HashSet<>();
+                        fieldsSet = new HashSet<>(fields.length);
                     }
                     fieldsSet.add(field);
                 }
@@ -189,6 +251,50 @@ public class ExcelImport<T> {
                 annotationMapping.put(excelField, method);
             }
         }
+    }
+
+    /**
+    * @author Jason
+    * @date 2020/5/25 9:22
+    * @params []
+    * 转为Java对象 返回错误信息
+    * @return java.lang.String
+    */
+    public String getObjectList() throws IOException {
+        return this.getObjectList(ExcelConfig.DEFAULT_COLLECTION_SIZE);
+    }
+
+    /**
+    * @author Jason
+    * @date 2020/5/25 9:28
+    * @params [size]
+    * 重载
+    * @return java.lang.String
+    */
+    public String getObjectList(int size) throws IOException {
+        return this.getObjects(new ArrayList<>(size));
+    }
+
+    /**
+    * @author Jason
+    * @date 2020/5/25 9:24
+    * @params []
+    * 转为Java对象 返回错误信息
+    * @return java.lang.String
+    */
+    public String getObjectSet() throws IOException {
+        return this.getObjectSet(ExcelConfig.DEFAULT_COLLECTION_SIZE);
+    }
+
+    /**
+    * @author Jason
+    * @date 2020/5/25 9:28
+    * @params [size]
+    * 重载
+    * @return java.lang.String
+    */
+    public String getObjectSet(int size) throws IOException {
+        return this.getObjects(new HashSet<>(size));
     }
 
     /**
@@ -447,7 +553,7 @@ public class ExcelImport<T> {
                 method.invoke(instance, format);
             }else if(numberFlag){
                 method.invoke(instance,
-                        new Double(cell.toString()).intValue());
+                        String.valueOf(new Double(cell.toString()).intValue()));
             }else{
                 method.invoke(instance, cell.toString());
             }
@@ -514,7 +620,7 @@ public class ExcelImport<T> {
                 field.set(instance, format);
             }else if(numberFlag){
                 field.set(instance,
-                        new Double(cell.toString()).intValue());
+                        String.valueOf(new Double(cell.toString()).intValue()));
             }else{
                 field.set(instance, cell.toString());
             }
@@ -549,21 +655,6 @@ public class ExcelImport<T> {
         }else if(field.getType() == Character.class){
             field.set(instance,cell.toString().toCharArray()[0]);
         }
-    }
-
-    public ExcelImport<T> setStartRow(int startRow) {
-        this.startRow = startRow;
-        return this;
-    }
-
-    public ExcelImport<T> setStartSheet(int startSheet) {
-        this.startSheet = startSheet;
-        return this;
-    }
-
-    public ExcelImport<T> setSheetName(String sheetName) {
-        this.sheetName = sheetName;
-        return this;
     }
 
     /**

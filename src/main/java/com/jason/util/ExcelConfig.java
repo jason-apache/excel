@@ -23,6 +23,11 @@ public class ExcelConfig {
     public final static String CALL_SEPARATOR = ".";
 
     /**
+     * 导入默认集合大小
+     */
+    public final static Integer DEFAULT_COLLECTION_SIZE = 1000;
+
+    /**
      * 导出工作簿名称
      */
     public final static String SHEET_NAME = "Export";
