@@ -658,15 +658,26 @@ public class ExcelImport<T> {
     }
 
     /**
+    * @author Jason
+    * @date 2020/5/25 10:52
+    * @params [template]
+    * 重载，配置字典数据转换
+    * @return com.jason.util.ExcelImport<T>
+    */
+    public ExcelImport<T> putTemplate(Map<String, String> template) {
+        return this.putTemplate(ExcelConfig.DEFAULT_NAME_KEY,template);
+    }
+
+    /**
      * @author Jason
      * @date 2020/3/31 13:50
      * @params [template]
-     * 配置模板
+     * 配置字典数据转换
      * @return com.jason.util.ExcelImport<T>
      */
     public ExcelImport<T> putTemplate(String nameKey, Map<String, String> template) {
         if(null == this.template){
-            this.template = new HashMap<>(10);
+            this.template = new HashMap<>();
         }
         this.template.put(nameKey,template);
         return this;

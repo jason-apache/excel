@@ -620,14 +620,25 @@ public class ExcelExport<T> {
 
     /**
     * @author Jason
+    * @date 2020/5/25 10:51
+    * @params [template]
+    * 重载，配置字典数据转换
+    * @return com.jason.util.ExcelExport<T>
+    */
+    public ExcelExport<T> putTemplate(Map<String, String> template) {
+        return this.putTemplate(ExcelConfig.DEFAULT_NAME_KEY,template);
+    }
+
+    /**
+    * @author Jason
     * @date 2020/3/30 15:28
     * @params [template]
-    * 设值模板格式
+    * 配置字典数据转换
     * @return com.jason.util.ExcelExport<T>
     */
     public ExcelExport<T> putTemplate(String nameKey,Map<String, String> template) {
         if(this.template == null){
-            this.template = new HashMap<>(16);
+            this.template = new HashMap<>();
         }
         this.template.put(nameKey,template);
         return this;

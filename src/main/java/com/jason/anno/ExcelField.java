@@ -1,5 +1,7 @@
 package com.jason.anno;
 
+import com.jason.util.ExcelConfig;
+
 import java.lang.annotation.ElementType;
 import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
@@ -59,7 +61,7 @@ public @interface ExcelField {
     /**
      *使用模板的key
      */
-    String templateNameKey() default "default";
+    String templateNameKey() default ExcelConfig.DEFAULT_NAME_KEY;
     /**
      *是否导入
      */

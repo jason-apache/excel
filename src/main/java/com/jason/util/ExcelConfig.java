@@ -82,9 +82,12 @@ public class ExcelConfig {
     public final static String EXPORT_TRUE = "是";
     public final static String EXPORT_FALSE = "否";
 
-
     /**
-     * 数据模板，仅支持String类型，主要用于字典数据转换、
+     * 模板key常量
+     */
+    public final static String DEFAULT_NAME_KEY = "default";
+    /**
+     * 配置字典数据转换，仅支持String类型
      */
     public enum Template{
 
