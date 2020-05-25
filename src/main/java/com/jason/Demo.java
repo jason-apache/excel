@@ -13,6 +13,7 @@ import com.jason.util.ExcelConfig;
 import com.jason.util.ExcelExport;
 import com.jason.util.ExcelImport;
 import com.jason.util.SqlSessionFactoryUtil;
+import org.apache.poi.ss.usermodel.Sheet;
 import org.junit.Before;
 import org.junit.Test;
 
@@ -139,8 +140,8 @@ public class Demo {
         Map<String, String> template2 = new HashMap<>(1);
         genImport.putTemplate("default",ExcelConfig.getTemplateCode()).putTemplate("第二个",template2);
         template2.put("字典数据2","1");
-        ArrayList<GeneralExcel> list = new ArrayList<>();
-        String e2 = genImport.getObjects(list);
+        List<GeneralExcel> list = genImport.getObjectList();
+        String e2 = genImport.getErrorMsg();
         System.out.println(list);
         System.out.println(e2);
     }
@@ -220,8 +221,8 @@ public class Demo {
         //设置模板格式
         excelImport.putTemplate("default",ExcelConfig.getTemplateCode());
         excelImport.putTemplate("parent",ExcelConfig.getTemplateTitle());
-        List<ImportUseAnno> list = new ArrayList<>();
-        String errorMsg = excelImport.getObjects(list);
+        List<ImportUseAnno> list =  excelImport.getObjectList();
+        String errorMsg = excelImport.getErrorMsg();
         System.out.println(list);
         System.out.println(errorMsg);
 
@@ -229,7 +230,7 @@ public class Demo {
         //第二种写法
         ExcelImport<ImportUseAnno> excelImport = new ExcelImport<>(new FileInputStream(file), ImportUseAnno.class);
         //设置模板格式
-        excelImport.setTemplate(ExcelConfig.getTemplateCode());
+        excelImport.putTemplate(ExcelConfig.getTemplateCode());
         List<ImportUseAnno> list = new ArrayList<>();
         Sheet sheet = excelImport.getSheet();
         //此处i应从1开始
@@ -265,7 +266,7 @@ public class Demo {
         //第二种写法
         ExcelImport<ImportNoUseAnno> excelImport = new ExcelImport<>(new FileInputStream(file), ImportNoUseAnno.class);
         //设置模板格式
-        excelImport.setTemplate(ExcelConfig.getTemplateCode());
+        excelImport.putTemplate(ExcelConfig.getTemplateCode());
         List<ImportNoUseAnno> list = new ArrayList<>();
         Sheet sheet = excelImport.getSheet();
         //此处i应从1开始

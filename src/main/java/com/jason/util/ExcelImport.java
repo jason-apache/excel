@@ -45,7 +45,9 @@ public class ExcelImport<T> {
      *输入流
      */
     private final InputStream is;
-
+    /**
+     * 工作簿
+     */
     private Sheet sheet;
     /**
      *是否初始化
@@ -83,6 +85,10 @@ public class ExcelImport<T> {
      * 使用Excel2007后的版本，扩展名是.xlsx
      */
     private boolean useXSSF = true;
+    /**
+     * 错误信息
+     */
+    private String errorMsg;
 
     /**
     * @author Jason
@@ -260,7 +266,7 @@ public class ExcelImport<T> {
     * 转为Java对象 返回错误信息
     * @return java.lang.String
     */
-    public String getObjectList() throws IOException {
+    public List<T> getObjectList() throws IOException {
         return this.getObjectList(ExcelConfig.DEFAULT_COLLECTION_SIZE);
     }
 
@@ -271,8 +277,8 @@ public class ExcelImport<T> {
     * 重载
     * @return java.lang.String
     */
-    public String getObjectList(int size) throws IOException {
-        return this.getObjects(new ArrayList<>(size));
+    public List<T> getObjectList(int size) throws IOException {
+        return (List<T>) this.getObjects(new ArrayList<>(size));
     }
 
     /**
@@ -282,7 +288,7 @@ public class ExcelImport<T> {
     * 转为Java对象 返回错误信息
     * @return java.lang.String
     */
-    public String getObjectSet() throws IOException {
+    public Set<T> getObjectSet() throws IOException {
         return this.getObjectSet(ExcelConfig.DEFAULT_COLLECTION_SIZE);
     }
 
@@ -293,8 +299,8 @@ public class ExcelImport<T> {
     * 重载
     * @return java.lang.String
     */
-    public String getObjectSet(int size) throws IOException {
-        return this.getObjects(new HashSet<>(size));
+    public Set<T> getObjectSet(int size) throws IOException {
+        return (Set<T>) this.getObjects(new HashSet<>(size));
     }
 
     /**
@@ -304,7 +310,7 @@ public class ExcelImport<T> {
      * 转为Java对象 返回错误信息
      * @return String
      */
-    public String getObjects(Collection<T> collection) throws IOException {
+    public Collection<T> getObjects(Collection<T> collection) throws IOException {
 
         if(!this.initialized){
             this.init();
@@ -323,8 +329,9 @@ public class ExcelImport<T> {
                 e.printStackTrace();
                 errorMsg.append("错误信息：第").append(i+this.startRow).append("行，").append(e.toString()).append("\r\n");
             }
+            this.errorMsg = errorMsg.toString();
         }
-        return errorMsg.toString();
+        return collection;
     }
 
     /**
@@ -707,5 +714,16 @@ public class ExcelImport<T> {
             this.init();
         }
         return sheet;
+    }
+
+    /**
+    * @author Jason
+    * @date 2020/5/25 13:19
+    * @params []
+    * 导入时的错误信息
+    * @return java.lang.String
+    */
+    public String getErrorMsg() {
+        return errorMsg;
     }
 }
