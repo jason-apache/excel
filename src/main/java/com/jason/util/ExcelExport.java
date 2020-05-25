@@ -321,8 +321,8 @@ public class ExcelExport<T> {
             int currentElement = 0;
             for(T t : collection){
                 try {
-                    this.outPutData(t);
                     currentElement++;
+                    this.outPutData(t);
                 }catch (Exception e){
                     e.printStackTrace();
                     errorMsg.append("错误信息：第").append(currentElement).append("行，").append(e.getMessage()).append("\r\n");
