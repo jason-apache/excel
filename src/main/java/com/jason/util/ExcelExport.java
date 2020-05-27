@@ -323,11 +323,27 @@ public class ExcelExport<T> {
         return this;
     }
 
+    /**
+    * @author Jason
+    * @date 2020/5/27 15:38
+    * @params [excelField, cell]
+    * 设置导出列约束
+    * @return void
+    */
     private void createCellFormat(ExcelField excelField,Cell cell){
-        CellAddress address = cell.getAddress();
-        createCellFormat(excelField,this.template,this.sheet,address.getColumn(),address.getColumn());
+        if(excelField.useTemplate() && this.template != null){
+            CellAddress address = cell.getAddress();
+            createCellFormat(excelField,this.template,this.sheet,address.getColumn(),address.getColumn());
+        }
     }
 
+    /**
+    * @author Jason
+    * @date 2020/5/27 15:39
+    * @params [excelField, template, sheet, startCol, endCol]
+    * 静态共有方法
+    * @return void
+    */
     public static void createCellFormat(ExcelField excelField,Map<String,Map<String,String>> template,Sheet sheet,int startCol,int endCol) {
         if(excelField.useTemplate() && template != null){
             Map<String, String> map = template.get(excelField.templateNameKey());
