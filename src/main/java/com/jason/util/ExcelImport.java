@@ -477,6 +477,19 @@ public class ExcelImport<T> {
      * @return void
      */
     private void invoke(Method method,ExcelField excelField,Cell cell,Object instance)
+            throws IllegalAccessException, ParseException, InvocationTargetException {
+        invoke(method,excelField,cell,instance,this.template);
+    }
+
+    /**
+    * @author Jason
+    * @date 2020/5/27 15:54
+    * @params [method, excelField, cell, instance, template]
+    * 静态公有方法
+    * @return void
+    */
+    public static void invoke(Method method,ExcelField excelField,Cell cell,Object instance,
+                        Map<String,Map<String,String>> template)
             throws InvocationTargetException, IllegalAccessException, ParseException {
 
         if(cell == null || cell.toString().length() == 0){
@@ -547,7 +560,18 @@ public class ExcelImport<T> {
      * 根据不同参数类型给字段设置，转换模板数据
      * @return void
      */
-    private void setValue(Field field,ExcelField excelField,Cell cell,Object instance) throws IllegalAccessException, ParseException {
+    private void setValue(Field field,ExcelField excelField,Cell cell,Object instance) throws ParseException, IllegalAccessException {
+        setValue(field,excelField,cell,instance,this.template);
+    }
+
+    /**
+    * @author Jason
+    * @date 2020/5/27 15:56
+    * @params [field, excelField, cell, instance]
+    * 静态公有方法
+    * @return void
+    */
+    public static void setValue(Field field,ExcelField excelField,Cell cell,Object instance,Map<String,Map<String,String>> template) throws IllegalAccessException, ParseException {
         if(cell == null || cell.toString().length() == 0){
             return;
         }

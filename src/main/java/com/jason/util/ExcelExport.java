@@ -60,7 +60,7 @@ public class ExcelExport<T> {
      */
     private int curRow = 0;
     /**
-     *注解
+     *注解，按照list中注解的顺序导出
      */
     private List<ExcelField> annotationList;
     /**
@@ -218,21 +218,6 @@ public class ExcelExport<T> {
     }
 
     /**
-    * @author Jason
-    * @date 2020/5/19 13:08
-    * @params [cell, cellStyle]
-    * 根据工作簿不同类型设置样式
-    * @return void
-    */
-    private void setCellStyle(Cell cell,CellStyle cellStyle){
-        if(this.useSXSSF){
-            cell.setCellStyle(cellStyle);
-        }else if(this.useHSSF){
-            cell.getCellStyle().cloneStyleFrom(cellStyle);
-        }
-    }
-
-    /**
      * @author Jason
      * @date 2020/3/27 10:00
      * @params []
@@ -252,6 +237,52 @@ public class ExcelExport<T> {
      */
     private Cell createCell(Row row,int curCellColumns){
         return row.createCell(curCellColumns);
+    }
+
+    /**
+     * @author Jason
+     * @date 2020/5/27 15:38
+     * @params [excelField, cell]
+     * 设置导出列约束
+     * @return void
+     */
+    private void createCellFormat(ExcelField excelField,Cell cell){
+        if(excelField.useTemplate() && this.template != null){
+            CellAddress address = cell.getAddress();
+            createCellFormat(excelField,this.template,this.sheet,address.getColumn(),address.getColumn());
+        }
+    }
+
+    /**
+     * @author Jason
+     * @date 2020/5/27 15:39
+     * @params [excelField, template, sheet, startCol, endCol]
+     * 静态公有方法
+     * @return void
+     */
+    public static void createCellFormat(ExcelField excelField,Map<String,Map<String,String>> template,Sheet sheet,int startCol,int endCol) {
+        if(excelField.useTemplate() && template != null){
+            Map<String, String> map = template.get(excelField.templateNameKey());
+            if(null != map && !map.isEmpty()){
+                Object[] values =  map.values().toArray();
+                String[] val = new String[values.length];
+                for (int i = 0; i < values.length; i++) {
+                    val[i] = values[i].toString();
+                }
+                DataValidationHelper dataValidationHelper = sheet.getDataValidationHelper();
+                CellRangeAddressList cellRangeAddressList = new CellRangeAddressList(0,ExcelConfig.EXPORT_FORMAT_RANGE,startCol,endCol);
+                DataValidationConstraint constraint = dataValidationHelper.createExplicitListConstraint(val);
+                DataValidation dataValidation = dataValidationHelper.createValidation(constraint, cellRangeAddressList);
+                //处理Excel兼容性问题
+                if(dataValidation instanceof XSSFDataValidation) {
+                    dataValidation.setSuppressDropDownArrow(true);
+                    dataValidation.setShowErrorBox(true);
+                }else {
+                    dataValidation.setSuppressDropDownArrow(false);
+                }
+                sheet.addValidationData(dataValidation);
+            }
+        }
     }
 
     /**
@@ -303,7 +334,7 @@ public class ExcelExport<T> {
             for (ExcelField excelField : annotationList) {
                 Object o = annotationMapping.get(excelField);
                 Cell cell = this.createCell(row, curCellNum++);
-                Object val = this.getVal(excelField, o, t);
+                Object val = getVal(excelField, o, t);
                 this.setValue(excelField,cell, val);
                 this.createCellFormat(excelField,cell);
             }
@@ -325,66 +356,20 @@ public class ExcelExport<T> {
 
     /**
     * @author Jason
-    * @date 2020/5/27 15:38
-    * @params [excelField, cell]
-    * 设置导出列约束
-    * @return void
-    */
-    private void createCellFormat(ExcelField excelField,Cell cell){
-        if(excelField.useTemplate() && this.template != null){
-            CellAddress address = cell.getAddress();
-            createCellFormat(excelField,this.template,this.sheet,address.getColumn(),address.getColumn());
-        }
-    }
-
-    /**
-    * @author Jason
-    * @date 2020/5/27 15:39
-    * @params [excelField, template, sheet, startCol, endCol]
-    * 静态共有方法
-    * @return void
-    */
-    public static void createCellFormat(ExcelField excelField,Map<String,Map<String,String>> template,Sheet sheet,int startCol,int endCol) {
-        if(excelField.useTemplate() && template != null){
-            Map<String, String> map = template.get(excelField.templateNameKey());
-            if(null != map && !map.isEmpty()){
-                Object[] values =  map.values().toArray();
-                String[] val = new String[values.length];
-                for (int i = 0; i < values.length; i++) {
-                    val[i] = values[i].toString();
-                }
-                DataValidationHelper dataValidationHelper = sheet.getDataValidationHelper();
-                CellRangeAddressList cellRangeAddressList = new CellRangeAddressList(0,ExcelConfig.EXPORT_FORMAT_RANGE,startCol,endCol);
-                DataValidationConstraint constraint = dataValidationHelper.createExplicitListConstraint(val);
-                DataValidation dataValidation = dataValidationHelper.createValidation(constraint, cellRangeAddressList);
-                //处理Excel兼容性问题
-                if(dataValidation instanceof XSSFDataValidation) {
-                    dataValidation.setSuppressDropDownArrow(true);
-                    dataValidation.setShowErrorBox(true);
-                }else {
-                    dataValidation.setSuppressDropDownArrow(false);
-                }
-                sheet.addValidationData(dataValidation);
-            }
-        }
-    }
-
-    /**
-    * @author Jason
     * @date 2020/4/23 11:12
     * @params [excelField, o, t]
     * @return java.lang.Object
-    * 获取值
+    * 获取值，静态公有方法
     */
-    private Object getVal(ExcelField excelField,Object o,T t) throws InvocationTargetException,
+    public static Object getVal(ExcelField excelField,Object o,Object instance) throws InvocationTargetException,
             IllegalAccessException, NoSuchFieldException, NoSuchMethodException {
         if(null == excelField || null == o){
             return null;
         }
         if(o instanceof Method){
-            return this.getMethodVal(excelField,(Method)o,t);
+            return getMethodVal(excelField,(Method)o,instance);
         }else if(o instanceof Field){
-            return this.getFieldVal(excelField,(Field) o,t);
+            return getFieldVal(excelField,(Field) o,instance);
         }else {
             return null;
         }
@@ -395,11 +380,11 @@ public class ExcelExport<T> {
     * @date 2020/4/23 11:06
     * @params [excelField, method, t]
     * @return java.lang.Object
-    * 获取值
+    * 获取值，静态公有方法
     */
-    private Object getMethodVal(ExcelField excelField,Method method,T t) throws InvocationTargetException,
+    public static Object getMethodVal(ExcelField excelField,Method method,Object instance) throws InvocationTargetException,
             IllegalAccessException {
-        return method.invoke(t);
+        return method.invoke(instance);
     }
 
     /**
@@ -407,18 +392,18 @@ public class ExcelExport<T> {
     * @date 2020/4/23 11:07
     * @params [excelField, field, t]
     * @return java.lang.Object
-    * 获取值
+    * 获取值，静态公有方法
     */
-    private Object getFieldVal(ExcelField excelField,Field field,T t) throws IllegalAccessException,
+    public static Object getFieldVal(ExcelField excelField,Field field,Object instance) throws IllegalAccessException,
             NoSuchFieldException, NoSuchMethodException, InvocationTargetException {
         if(StringUtil.isNotBlank(excelField.call())){
             //把当前属性get出来直接丢入递归
             field.setAccessible(true);
-            Object o = field.get(t);
-            return this.recursionGet(o,excelField,null);
+            Object o = field.get(instance);
+            return recursionGet(o,excelField,null);
         }else {
             field.setAccessible(true);
-            return field.get(t);
+            return field.get(instance);
         }
     }
 
@@ -426,10 +411,10 @@ public class ExcelExport<T> {
     * @author Jason
     * @date 2020/4/28 9:34
     * @params [instance, excelField, node]
-    * 递归获取值
+    * 递归获取值，静态公有方法
     * @return java.lang.Object
     */
-    private Object recursionGet(Object instance,ExcelField excelField,String node)
+    public static Object recursionGet(Object instance,ExcelField excelField,String node)
             throws NoSuchFieldException, IllegalAccessException, NoSuchMethodException, InvocationTargetException {
         if(node == null){
             node = excelField.call();
@@ -447,7 +432,7 @@ public class ExcelExport<T> {
             curField.setAccessible(true);
             //取出，丢入递归
             Object curInstance = curField.get(instance);
-            return this.recursionGet(curInstance,excelField,nextNode);
+            return recursionGet(curInstance,excelField,nextNode);
         }else{
             Field curField = instance.getClass().getDeclaredField(node);
             curField.setAccessible(true);
@@ -462,6 +447,98 @@ public class ExcelExport<T> {
                 //取出该属性直接返回
                 return curField.get(instance);
             }
+        }
+    }
+
+    /**
+     * @author Jason
+     * @date 2020/5/27 15:46
+     * @params [excelField, cell, object]
+     * 设值至单元格，转换模板数据
+     * @return void
+     */
+    private void setValue(ExcelField excelField,Cell cell,Object object){
+        setValue(excelField, cell, object,this.styles,this.styleKey,this.template,this.useSXSSF);
+    }
+
+    /**
+     * @author Jason
+     * @date 2020/3/30 13:17
+     * @params [excelField,cell, field]
+     * 静态公有方法
+     * @return void
+     */
+    public static void setValue(ExcelField excelField,Cell cell,Object object,
+                                Map<String,CellStyle> styles,String styleKey,Map<String,Map<String,String>> template,boolean useSXSSF){
+        //设置样式
+        setCellStyle(cell,styles.get(styleKey),useSXSSF);
+        if(object == null){
+            cell.setCellValue("");
+            return;
+        }
+        if(null != excelField && excelField.useTemplate()){
+            Map<String, String> map = template.get(excelField.templateNameKey());
+            if(null != map){
+                cell.setCellValue(map.get(object.toString()));
+            }
+            return;
+        }
+
+        if(object instanceof String){
+            cell.setCellValue(object.toString());
+        }else if(object instanceof Integer){
+            cell.setCellValue((Integer) object);
+        }else if(object instanceof Long){
+            cell.setCellValue((Long) object);
+        }else if(object instanceof Double){
+            cell.setCellValue((Double) object);
+        }else if(object instanceof Character){
+            cell.setCellValue(object.toString());
+        }else if(object instanceof Short){
+            cell.setCellValue((Short) object);
+        }else if(object instanceof Byte){
+            cell.setCellValue((Byte) object);
+        }else if(object instanceof Float){
+            //解决float精度问题
+            cell.setCellValue(Double.parseDouble(object.toString()));
+        }else if(object instanceof Boolean){
+            if((Boolean) object){
+                cell.setCellValue(ExcelConfig.EXPORT_TRUE);
+            }else {
+                cell.setCellValue(ExcelConfig.EXPORT_FALSE);
+            }
+        }else if(object instanceof Date){
+            SimpleDateFormat format = new SimpleDateFormat(ExcelConfig.DATE_EXPORT_FORMAT);
+            cell.setCellValue(format.format(object));
+        }else{
+            //不属于上面中的类型，则调用toString方法
+            cell.setCellValue(object.toString());
+        }
+    }
+
+    /**
+     * @author Jason
+     * @date 2020/5/27 15:44
+     * @params [cell, cellStyle]
+     * 根据工作簿不同类型设置样式
+     * @return void
+     */
+    private void setCellStyle(Cell cell,CellStyle cellStyle){
+        setCellStyle(cell,cellStyle,this.useSXSSF);
+    }
+
+    /**
+     * @author Jason
+     * @date 2020/5/19 13:08
+     * @params [cell, cellStyle]
+     * 静态公有方法
+     * @return void
+     */
+    public static void setCellStyle(Cell cell,CellStyle cellStyle,boolean useSXSSF){
+        if(useSXSSF){
+            cell.setCellStyle(cellStyle);
+        }else{
+            cell.getCellStyle().cloneStyleFrom(cellStyle);
         }
     }
 
@@ -555,60 +632,6 @@ public class ExcelExport<T> {
         FileOutputStream fileOutputStream = new FileOutputStream(file);
         this.write(fileOutputStream);
         return this;
-    }
-
-    /**
-     * @author Jason
-     * @date 2020/3/30 13:17
-     * @params [excelField,cell, field]
-     * 设值至单元格，转换模板数据
-     * @return void
-     */
-    private void setValue(ExcelField excelField,Cell cell,Object object){
-        //设置样式
-        this.setCellStyle(cell,styles.get(styleKey));
-        if(object == null){
-            cell.setCellValue("");
-            return;
-        }
-        if(null != excelField && excelField.useTemplate()){
-            Map<String, String> map = template.get(excelField.templateNameKey());
-            if(null != map){
-                cell.setCellValue(map.get(object.toString()));
-            }
-            return;
-        }
-
-        if(object instanceof String){
-            cell.setCellValue(object.toString());
-        }else if(object instanceof Integer){
-            cell.setCellValue((Integer) object);
-        }else if(object instanceof Long){
-            cell.setCellValue((Long) object);
-        }else if(object instanceof Double){
-            cell.setCellValue((Double) object);
-        }else if(object instanceof Character){
-            cell.setCellValue(object.toString());
-        }else if(object instanceof Short){
-            cell.setCellValue((Short) object);
-        }else if(object instanceof Byte){
-            cell.setCellValue((Byte) object);
-        }else if(object instanceof Float){
-            //解决float精度问题
-            cell.setCellValue(Double.parseDouble(object.toString()));
-        }else if(object instanceof Boolean){
-            if((Boolean) object){
-                cell.setCellValue(ExcelConfig.EXPORT_TRUE);
-            }else {
-                cell.setCellValue(ExcelConfig.EXPORT_FALSE);
-            }
-        }else if(object instanceof Date){
-            SimpleDateFormat format = new SimpleDateFormat(ExcelConfig.DATE_EXPORT_FORMAT);
-            cell.setCellValue(format.format(object));
-        }else{
-            //不属于上面中的类型，则调用toString方法
-            cell.setCellValue(object.toString());
-        }
     }
 
     /**
