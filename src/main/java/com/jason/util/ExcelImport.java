@@ -2,12 +2,8 @@ package com.jason.util;
 
 import com.jason.anno.ExcelField;
 import org.apache.poi.hssf.usermodel.HSSFDateUtil;
-import org.apache.poi.hssf.usermodel.HSSFWorkbook;
-import org.apache.poi.ss.usermodel.Cell;
-import org.apache.poi.ss.usermodel.CellType;
-import org.apache.poi.ss.usermodel.Row;
-import org.apache.poi.ss.usermodel.Sheet;
-import org.apache.poi.xssf.usermodel.XSSFWorkbook;
+import org.apache.poi.openxml4j.exceptions.InvalidFormatException;
+import org.apache.poi.ss.usermodel.*;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -49,6 +45,7 @@ public class ExcelImport<T> {
      * 工作簿
      */
     private Sheet sheet;
+    private Workbook workbook;
     /**
      *是否初始化
      */
@@ -78,14 +75,6 @@ public class ExcelImport<T> {
      */
     private Map<String,Map<String,String>> template;
     /**
-     * 使用Excel2003以前（包括2003）的版本，扩展名是.xls
-     */
-    private boolean useHSSF = false;
-    /**
-     * 使用Excel2007后的版本，扩展名是.xlsx
-     */
-    private boolean useXSSF = true;
-    /**
      * 错误信息
      */
     private String errorMsg;
@@ -98,19 +87,6 @@ public class ExcelImport<T> {
     * @return
     */
     public ExcelImport(InputStream is,Class<T> clazz){
-        this(is,clazz,true);
-    }
-
-    /**
-    * @author Jason
-    * @date 2020/5/19 11:03
-    * @params [is, clazz, useXSSF]
-    * 构造方法，设置workbook文件格式
-    * @return
-    */
-    public ExcelImport(InputStream is,Class<T> clazz,boolean useXSSF){
-        this.useXSSF = useXSSF;
-        this.useHSSF = !useXSSF;
         ExcelField field = clazz.getAnnotation(ExcelField.class);
         //根据注解中的属性设初值
         if(null != field){
@@ -124,14 +100,14 @@ public class ExcelImport<T> {
     }
 
     /**
-    * @author Jason
-    * @date 2020/5/25 9:53
-    * @params [is, clazz, sheetIndex, startRow]
-    * 重载构造方法，默认使用XSSFWorkbook对象
-    * @return
-    */
+     * @author Jason
+     * @date 2020/5/25 9:53
+     * @params [is, clazz, sheetIndex, startRow]
+     * 重载构造方法
+     * @return
+     */
     public ExcelImport(InputStream is,Class<T> clazz,Integer sheetIndex,Integer startRow){
-        this(is,clazz,sheetIndex,startRow,true);
+        this(is,clazz,null,sheetIndex,startRow);
     }
 
     /**
@@ -139,21 +115,10 @@ public class ExcelImport<T> {
      * @date 2020/5/25 9:53
      * @params [is, clazz, sheetIndex, startRow]
      * 重载构造方法
-     * @return
-     */
-    public ExcelImport(InputStream is,Class<T> clazz,Integer sheetIndex,Integer startRow,boolean useXSSF){
-        this(is,clazz,null,sheetIndex,startRow,useXSSF);
-    }
-
-    /**
-     * @author Jason
-     * @date 2020/5/25 9:53
-     * @params [is, clazz, sheetIndex, startRow]
-     * 重载构造方法，默认使用XSSFWorkbook对象
      * @return
      */
     public ExcelImport(InputStream is,Class<T> clazz,String sheetName,Integer startRow){
-        this(is,clazz,sheetName,startRow,true);
+        this(is,clazz,sheetName,null,startRow);
     }
 
     /**
@@ -163,25 +128,12 @@ public class ExcelImport<T> {
      * 重载构造方法
      * @return
      */
-    public ExcelImport(InputStream is,Class<T> clazz,String sheetName,Integer startRow,boolean useXSSF){
-        this(is,clazz,sheetName,null,startRow,useXSSF);
-    }
-
-    /**
-     * @author Jason
-     * @date 2020/5/25 9:53
-     * @params [is, clazz, sheetIndex, startRow]
-     * 重载构造方法
-     * @return
-     */
-    public ExcelImport(InputStream is,Class<T> clazz,String sheetName,Integer sheetIndex,Integer startRow,boolean useXSSF){
+    public ExcelImport(InputStream is,Class<T> clazz,String sheetName,Integer sheetIndex,Integer startRow){
         this.is = is;
         this.clazz = clazz;
         this.sheetName = sheetName;
-        this.sheetIndex = sheetIndex;
+        this.sheetIndex = sheetIndex == null ? 0 : sheetIndex;
         this.startRow = startRow;
-        this.useXSSF = useXSSF;
-        this.useHSSF = !useXSSF;
         this.initMethod();
     }
 
@@ -192,34 +144,26 @@ public class ExcelImport<T> {
      * 初始化工作薄
      * @return void
      */
-    private void init() throws IOException {
-        if(this.useXSSF){
-            XSSFWorkbook xssfWorkbook = new XSSFWorkbook(this.is);
-            //初始化
+    private void init(){
+        try {
+            this.workbook = WorkbookFactory.create(this.is);
             if(StringUtil.isNotBlank(sheetName)){
-                sheet = xssfWorkbook.getSheet(sheetName);
+                sheet = workbook.getSheet(sheetName);
             }else{
-                sheet = xssfWorkbook.getSheetAt(sheetIndex);
+                sheet = workbook.getSheetAt(sheetIndex);
             }
-        }else if(this.useHSSF){
-            HSSFWorkbook hssfWorkbook = new HSSFWorkbook(this.is);
-            //初始化
-            if(StringUtil.isNotBlank(sheetName)){
-                sheet = hssfWorkbook.getSheet(sheetName);
-            }else{
-                sheet = hssfWorkbook.getSheetAt(sheetIndex);
+            //取excel首行列名
+            Row firstRow = sheet.getRow(startRow);
+            titleMapping = new HashMap<>(sheet.getLastRowNum());
+            //取出excel列的位置index，放入title映射
+            for(int i=0;i<firstRow.getLastCellNum();i++){
+                String data = firstRow.getCell(i) == null ? "" : firstRow.getCell(i).toString();
+                titleMapping.put(data,i);
             }
+            this.initialized = true;
+        }catch (IOException | InvalidFormatException e){
+            e.printStackTrace();
         }
-
-        //取excel首行列名
-        Row firstRow = sheet.getRow(startRow);
-        titleMapping = new HashMap<>(sheet.getLastRowNum());
-        //取出excel列的位置index，放入title映射
-        for(int i=0;i<firstRow.getLastCellNum();i++){
-            String data = firstRow.getCell(i) == null ? "" : firstRow.getCell(i).toString();
-            titleMapping.put(data,i);
-        }
-        this.initialized = true;
     }
 
     /**
@@ -714,6 +658,17 @@ public class ExcelImport<T> {
             this.init();
         }
         return sheet;
+    }
+
+    /**
+    * @author Jason
+    * @date 2020/5/27 13:12
+    * @params []
+    * 获取工作簿对象
+    * @return org.apache.poi.ss.usermodel.Workbook
+    */
+    public Workbook getWorkbook() {
+        return workbook;
     }
 
     /**

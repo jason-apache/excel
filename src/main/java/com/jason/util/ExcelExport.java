@@ -672,4 +672,26 @@ public class ExcelExport<T> {
         this.styleKey = styleKey;
         return this;
     }
+
+    /**
+    * @author Jason
+    * @date 2020/5/27 13:14
+    * @params []
+    * 获取工作簿对象
+    * @return org.apache.poi.ss.usermodel.Workbook
+    */
+    public Workbook getWorkbook() {
+        return workbook;
+    }
+
+    /**
+    * @author Jason
+    * @date 2020/5/27 13:15
+    * @params []
+    * 获取工作簿对象
+    * @return org.apache.poi.ss.usermodel.Sheet
+    */
+    public Sheet getSheet() {
+        return sheet;
+    }
 }
