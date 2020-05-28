@@ -495,7 +495,7 @@ public class ExcelImport<T> {
         if(cell == null || cell.toString().length() == 0){
             return;
         }
-        if(null != excelField && excelField.useTemplate()){
+        if(null != excelField && excelField.useTemplate() && null != template){
             Map<String, String> map = template.get(excelField.templateNameKey());
             if(null != map){
                 String val = map.get(cell.toString());

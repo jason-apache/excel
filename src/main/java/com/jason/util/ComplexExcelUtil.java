@@ -387,6 +387,19 @@ public class ComplexExcelUtil {
     }
 
     /**
+     * @author Jason
+     * @date 2020/5/28 11:02
+     * @params [clazz, sheet, config]
+     * 重载方法，获取泛型list集合
+     * @return java.util.List<T>
+     */
+    public static <T> List<T> getObjectList(Class<T> clazz,Sheet sheet)
+            throws InstantiationException, IllegalAccessException, InvocationTargetException, NoSuchMethodException, ParseException, NoSuchFieldException {
+        ImportConfig importConfig = new ImportConfig(sheet);
+        return (List<T>) getObjects(clazz,new ArrayList<>(importConfig.getCollectionSize()),sheet,importConfig);
+    }
+
+    /**
     * @author Jason
     * @date 2020/5/28 11:02
     * @params [clazz, sheet, config]
@@ -396,6 +409,19 @@ public class ComplexExcelUtil {
     public static <T> List<T> getObjectList(Class<T> clazz,Sheet sheet,ImportConfig config)
             throws InstantiationException, IllegalAccessException, InvocationTargetException, NoSuchMethodException, ParseException, NoSuchFieldException {
         return (List<T>) getObjects(clazz,new ArrayList<>(config.getCollectionSize()),sheet,config);
+    }
+
+    /**
+     * @author Jason
+     * @date 2020/5/28 11:02
+     * @params [clazz, sheet, config]
+     * 重载方法，获取泛型set集合
+     * @return java.util.Set<T>
+     */
+    public static <T> Set<T> getObjectSet(Class<T> clazz,Sheet sheet)
+            throws InstantiationException, IllegalAccessException, InvocationTargetException, NoSuchMethodException, ParseException, NoSuchFieldException {
+        ImportConfig importConfig = new ImportConfig(sheet);
+        return (Set<T>) getObjects(clazz,new HashSet<>(importConfig.getCollectionSize()),sheet,importConfig);
     }
 
     /**
