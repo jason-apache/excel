@@ -79,10 +79,29 @@ public class ExcelConfig {
          */
         public final static int CELL_MIN_WIDTH = 4000;
 
-        public static Map<String, CellStyle> getStyles(Workbook workbook){
-            Map<String, CellStyle> styles = new HashMap<>(3);
+        public static Map<String,CellStyle> getDataStyle(Workbook workbook){
+            Map<String, CellStyle> styles = new HashMap<>(1);
             CellStyle style = workbook.createCellStyle();
+            style.setAlignment(HorizontalAlignment.LEFT);
+            style.setBorderRight(BorderStyle.THIN);
+            style.setRightBorderColor(IndexedColors.GREY_50_PERCENT.getIndex());
+            style.setBorderLeft(BorderStyle.THIN);
+            style.setLeftBorderColor(IndexedColors.GREY_50_PERCENT.getIndex());
+            style.setBorderTop(BorderStyle.THIN);
+            style.setTopBorderColor(IndexedColors.GREY_50_PERCENT.getIndex());
+            style.setBorderBottom(BorderStyle.THIN);
+            style.setBottomBorderColor(IndexedColors.GREY_50_PERCENT.getIndex());
+            Font dataFont = workbook.createFont();
+            dataFont.setFontName(ExcelConfig.Style.FONT_NAME);
+            dataFont.setFontHeightInPoints(ExcelConfig.Style.FONT_CELL_SIZE);
+            style.setFont(dataFont);
+            styles.put(ExcelConfig.Style.DEFAULT_STYLE, style);
+            return styles;
+        }
 
+        public static Map<String,CellStyle> getHeadRowStyle(Workbook workbook) {
+            Map<String, CellStyle> styles = new HashMap<>(1);
+            CellStyle style = workbook.createCellStyle();
             //设置headRow样式
             style.setAlignment(HorizontalAlignment.CENTER);
             style.setVerticalAlignment(VerticalAlignment.CENTER);
@@ -100,9 +119,12 @@ public class ExcelConfig {
             headRowFont.setBold(true);
             style.setFont(headRowFont);
             styles.put(ExcelConfig.Style.HEAD_ROW, style);
+            return styles;
+        }
 
-            //设置标题样式
-            style = workbook.createCellStyle();
+        public static Map<String,CellStyle> getTitleStyle(Workbook workbook){
+            Map<String, CellStyle> styles = new HashMap<>(1);
+            CellStyle style = workbook.createCellStyle();
             style.setAlignment(HorizontalAlignment.CENTER);
             style.setVerticalAlignment(VerticalAlignment.CENTER);
             style.setBorderRight(BorderStyle.THIN);
@@ -119,23 +141,14 @@ public class ExcelConfig {
             titleFont.setBold(true);
             style.setFont(titleFont);
             styles.put(ExcelConfig.Style.TITLE, style);
+            return styles;
+        }
 
-            //设置普通单元格样式
-            style = workbook.createCellStyle();
-            style.setAlignment(HorizontalAlignment.LEFT);
-            style.setBorderRight(BorderStyle.THIN);
-            style.setRightBorderColor(IndexedColors.GREY_50_PERCENT.getIndex());
-            style.setBorderLeft(BorderStyle.THIN);
-            style.setLeftBorderColor(IndexedColors.GREY_50_PERCENT.getIndex());
-            style.setBorderTop(BorderStyle.THIN);
-            style.setTopBorderColor(IndexedColors.GREY_50_PERCENT.getIndex());
-            style.setBorderBottom(BorderStyle.THIN);
-            style.setBottomBorderColor(IndexedColors.GREY_50_PERCENT.getIndex());
-            Font dataFont = workbook.createFont();
-            dataFont.setFontName(ExcelConfig.Style.FONT_NAME);
-            dataFont.setFontHeightInPoints(ExcelConfig.Style.FONT_CELL_SIZE);
-            style.setFont(dataFont);
-            styles.put(ExcelConfig.Style.DEFAULT_STYLE, style);
+        public static Map<String, CellStyle> getStyles(Workbook workbook){
+            Map<String, CellStyle> styles = new HashMap<>(3);
+            styles.put(Style.DEFAULT_STYLE,getDataStyle(workbook).get(Style.DEFAULT_STYLE));
+            styles.put(Style.HEAD_ROW,getHeadRowStyle(workbook).get(Style.HEAD_ROW));
+            styles.put(Style.TITLE,getTitleStyle(workbook).get(Style.TITLE));
             return styles;
         }
     }

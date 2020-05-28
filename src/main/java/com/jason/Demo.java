@@ -9,16 +9,19 @@ import com.jason.entity.myimport.ImportNoUseAnno;
 import com.jason.entity.myimport.ImportUseAnno;
 import com.jason.mapper.SimpleMapper;
 import com.jason.service.ClassesService;
-import com.jason.util.ExcelConfig;
-import com.jason.util.ExcelExport;
-import com.jason.util.ExcelImport;
-import com.jason.util.SqlSessionFactoryUtil;
+import com.jason.util.*;
 import org.apache.poi.ss.usermodel.Sheet;
+import org.apache.poi.ss.usermodel.Workbook;
+import org.apache.poi.ss.usermodel.WorkbookFactory;
+import org.apache.poi.xssf.streaming.SXSSFWorkbook;
+import org.apache.poi.xssf.usermodel.XSSFSheet;
+import org.apache.poi.xssf.usermodel.XSSFWorkbook;
 import org.junit.Before;
 import org.junit.Test;
 
 import java.io.File;
 import java.io.FileInputStream;
+import java.io.FileOutputStream;
 import java.io.IOException;
 import java.lang.reflect.InvocationTargetException;
 import java.text.ParseException;
@@ -255,7 +258,7 @@ public class Demo {
     //不使用注解导入只能取出与实体类字段名称一样的列
     //不支持模板格式
     public void importNoUseAnno() throws IOException, NoSuchMethodException, InstantiationException, IllegalAccessException, InvocationTargetException, NoSuchFieldException, ParseException {
-        File file = new File("C:/Users/user/Desktop/exportUseAnno.xlsx");
+        File file = new File("C:/Users/mh262/Desktop/exportUseAnno.xlsx");
 
         ExcelImport<ImportNoUseAnno> excelImport = new ExcelImport<>(new FileInputStream(file), ImportNoUseAnno.class);
         List<ImportNoUseAnno> list = new ArrayList<>();
@@ -285,5 +288,51 @@ public class Demo {
         }
         System.out.println(list);
         */
+    }
+
+    @Test
+    public void testComplex() throws Exception{
+        File file = new File("C:/Users/mh262/Desktop/complex.xlsx");
+
+        HashMap<String, Map<String, String>> template = new HashMap<>(2);
+        template.put("default",ExcelConfig.getTemplateTitle());
+        Map<String, String> template2 = new HashMap<>(1);
+        template2.put("1","字典数据2");
+        template.put("第二个",template2);
+
+        Workbook sxssfWorkbook = new SXSSFWorkbook();
+        Sheet sheet1 = sxssfWorkbook.createSheet("测试1");
+        int sheet1CurRow = 0;
+        String[] sheet1HeadRow = ComplexExcelUtil.getHeadRow(GeneralExcel.class);
+        ComplexExcelUtil.ExportConfig sheet1Config = new ComplexExcelUtil.ExportConfig(sxssfWorkbook,sheet1HeadRow,"测试1");
+        sheet1CurRow = ComplexExcelUtil.outputData(GeneralExcel.class,sheet1,generalExcelList,sheet1CurRow,template,sheet1Config);
+
+        Sheet sheet2 = sxssfWorkbook.createSheet("测试2");
+        int sheet2CurRow = 0;
+        String[] sheet2HeadRow = new String[]{"姓名","年龄"};
+        List<List<String>> sheet2Body = new ArrayList<>();
+        ArrayList<String> list = new ArrayList<>();
+        list.add("张三");
+        list.add("29");
+        sheet2Body.add(list);
+        ComplexExcelUtil.ExportConfig sheet2Config = new ComplexExcelUtil.ExportConfig(sxssfWorkbook,sheet2HeadRow,"测试2");
+        sheet2CurRow = ComplexExcelUtil.outputData(sheet2,sheet2Config,sheet2Body,0);
+
+        sxssfWorkbook.write(new FileOutputStream(file));
+
+        Workbook workbook = WorkbookFactory.create(file);
+        Sheet importSheet1 = workbook.getSheet(sheet1.getSheetName());
+        template.put("default",ExcelConfig.getTemplateCode());
+        Map<String, String> template3 = new HashMap<>(1);
+        template3.put("字典数据2","1");
+        template.put("第二个",template3);
+        ComplexExcelUtil.ImportConfig importConfig1 = new ComplexExcelUtil.ImportConfig(importSheet1,1).setTemplate(template);
+        List<GeneralExcel> list1 = ComplexExcelUtil.getObjectList(GeneralExcel.class, importSheet1, importConfig1);
+        System.out.println(list1);
+
+        Sheet importSheet2 = workbook.getSheet(sheet2.getSheetName());
+        ComplexExcelUtil.ImportConfig importConfig2 = new ComplexExcelUtil.ImportConfig(importSheet2);
+        List<List<String>> stringList = ComplexExcelUtil.getStringList(importSheet2, importConfig2);
+        System.out.println(stringList);
     }
 }

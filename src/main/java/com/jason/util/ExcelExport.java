@@ -6,7 +6,9 @@ import org.apache.poi.ss.usermodel.*;
 import org.apache.poi.ss.util.CellAddress;
 import org.apache.poi.ss.util.CellRangeAddress;
 import org.apache.poi.ss.util.CellRangeAddressList;
+import org.apache.poi.xssf.streaming.SXSSFCell;
 import org.apache.poi.xssf.streaming.SXSSFWorkbook;
+import org.apache.poi.xssf.usermodel.XSSFCell;
 import org.apache.poi.xssf.usermodel.XSSFDataValidation;
 
 import javax.servlet.http.HttpServletResponse;
@@ -193,9 +195,9 @@ public class ExcelExport<T> {
             Row row = this.createRow();
             Cell cell = row.createCell(0);
             cell.setCellValue(this.title);
-            this.setCellStyle(cell,styles.get(ExcelConfig.Style.TITLE));
+            setCellStyle(cell,styles.get(ExcelConfig.Style.TITLE));
             CellRangeAddress region = new CellRangeAddress(0, 0, 0, headRow.length-1);
-            this.setCellStyle(row.createCell(headRow.length-1),styles.get(ExcelConfig.Style.DEFAULT_STYLE));
+            setCellStyle(row.createCell(headRow.length-1),styles.get(ExcelConfig.Style.DEFAULT_STYLE));
             sheet.addMergedRegion(region);
         }
         Row row = this.createRow();
@@ -205,7 +207,7 @@ public class ExcelExport<T> {
             if (head != null) {
                 Cell cell = row.createCell(curCellNum++);
                 cell.setCellValue(head);
-                this.setCellStyle(cell,styles.get(ExcelConfig.Style.HEAD_ROW));
+                setCellStyle(cell,styles.get(ExcelConfig.Style.HEAD_ROW));
                 //下面这行代码容易引起文件受损
                 //this.sheet.setColumnWidth((short)1,head.getBytes().length * 2 * 256);
                 if(sheet.getColumnWidth(i) < ExcelConfig.Style.CELL_MIN_WIDTH){
@@ -336,7 +338,9 @@ public class ExcelExport<T> {
                 Cell cell = this.createCell(row, curCellNum++);
                 Object val = getVal(excelField, o, t);
                 this.setValue(excelField,cell, val);
-                this.createCellFormat(excelField,cell);
+                if(this.curRow == 1){
+                    this.createCellFormat(excelField,cell);
+                }
             }
         }else{
             for(int i = 0; i < headRow.length; i++){
@@ -458,7 +462,7 @@ public class ExcelExport<T> {
      * @return void
      */
     private void setValue(ExcelField excelField,Cell cell,Object object){
-        setValue(excelField, cell, object,this.styles,this.styleKey,this.template,this.useSXSSF);
+        setValue(excelField, cell, object,this.styles,this.styleKey,this.template);
     }
 
     /**
@@ -469,14 +473,14 @@ public class ExcelExport<T> {
      * @return void
      */
     public static void setValue(ExcelField excelField,Cell cell,Object object,
-                                Map<String,CellStyle> styles,String styleKey,Map<String,Map<String,String>> template,boolean useSXSSF){
+                                Map<String,CellStyle> styles,String styleKey,Map<String,Map<String,String>> template){
         //设置样式
-        setCellStyle(cell,styles.get(styleKey),useSXSSF);
+        setCellStyle(cell,styles.get(styleKey));
         if(object == null){
             cell.setCellValue("");
             return;
         }
-        if(null != excelField && excelField.useTemplate()){
+        if(null != excelField && excelField.useTemplate() && null != template){
             Map<String, String> map = template.get(excelField.templateNameKey());
             if(null != map){
                 cell.setCellValue(map.get(object.toString()));
@@ -518,24 +522,13 @@ public class ExcelExport<T> {
 
     /**
      * @author Jason
-     * @date 2020/5/27 15:44
-     * @params [cell, cellStyle]
-     * 根据工作簿不同类型设置样式
-     * @return void
-     */
-    private void setCellStyle(Cell cell,CellStyle cellStyle){
-        setCellStyle(cell,cellStyle,this.useSXSSF);
-    }
-
-    /**
-     * @author Jason
      * @date 2020/5/19 13:08
      * @params [cell, cellStyle]
      * 静态公有方法
      * @return void
      */
-    public static void setCellStyle(Cell cell,CellStyle cellStyle,boolean useSXSSF){
-        if(useSXSSF){
+    public static void setCellStyle(Cell cell,CellStyle cellStyle){
+        if(cell instanceof SXSSFCell || cell instanceof XSSFCell){
             cell.setCellStyle(cellStyle);
         }else{
             cell.getCellStyle().cloneStyleFrom(cellStyle);
