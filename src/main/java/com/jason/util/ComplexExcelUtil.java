@@ -134,8 +134,7 @@ public class ComplexExcelUtil {
     * 创建行，放回当前行数
     * @return int
     */
-    public static <T> int outputData(Class<T> clazz,Sheet sheet,Collection<T> collection,int curRow,
-                                     Map<String,Map<String,String>> template,ExportConfig config)
+    public static <T> int outputData(Class<T> clazz,Sheet sheet,Collection<T> collection,int curRow, ExportConfig config)
             throws NoSuchMethodException, NoSuchFieldException, IllegalAccessException, InvocationTargetException {
         if(null != config.getTitle()){
             curRow = createTitle(sheet,config,curRow);
@@ -167,12 +166,12 @@ public class ComplexExcelUtil {
                         Cell cell = row.createCell(curCellNum);
                         //调用导出工具类的方法
                         ExcelExport.setValue(excelField,cell,val, config.getStyleMap(),
-                                ExcelConfig.Style.DEFAULT_STYLE,template);
+                                ExcelConfig.Style.DEFAULT_STYLE,config.getTemplate());
                         curCellNum++;
                         if(temp == curRow){
                             CellAddress address = cell.getAddress();
                             //设置导出列格式要求
-                            ExcelExport.createCellFormat(excelField,template,sheet,address.getColumn(),address.getColumn());
+                            ExcelExport.createCellFormat(excelField,config.getTemplate(),sheet,address.getColumn(),address.getColumn());
                         }
                     }
                     curRow += config.rowInterval;
@@ -273,6 +272,10 @@ public class ComplexExcelUtil {
          * 样式
          */
         private Map<String,CellStyle> styleMap;
+        /**
+         * 字典转换
+         */
+        private Map<String,Map<String,String>> template;
 
         /**
         * @author Jason
@@ -340,6 +343,15 @@ public class ComplexExcelUtil {
 
         public ExportConfig setStyleMap(Map<String, CellStyle> styleMap) {
             this.styleMap = styleMap;
+            return this;
+        }
+
+        public Map<String, Map<String, String>> getTemplate() {
+            return template;
+        }
+
+        public ExportConfig setTemplate(Map<String, Map<String, String>> template) {
+            this.template = template;
             return this;
         }
     }

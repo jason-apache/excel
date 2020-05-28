@@ -305,7 +305,8 @@ public class Demo {
         int sheet1CurRow = 0;
         String[] sheet1HeadRow = ComplexExcelUtil.getHeadRow(GeneralExcel.class);
         ComplexExcelUtil.ExportConfig sheet1Config = new ComplexExcelUtil.ExportConfig(sxssfWorkbook,sheet1HeadRow,"测试1");
-        sheet1CurRow = ComplexExcelUtil.outputData(GeneralExcel.class,sheet1,generalExcelList,sheet1CurRow,template,sheet1Config);
+        sheet1Config.setTemplate(template);
+        sheet1CurRow = ComplexExcelUtil.outputData(GeneralExcel.class,sheet1,generalExcelList,sheet1CurRow,sheet1Config);
 
         Sheet sheet2 = sxssfWorkbook.createSheet("测试2");
         int sheet2CurRow = 0;
